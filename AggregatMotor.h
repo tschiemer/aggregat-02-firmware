@@ -15,14 +15,18 @@ class AggregatMotor {
 
         PwmOut m_pwm;
 
-        int m_period_usec;
-        float m_dc_min;
-        float m_dc_max;
+        int m_refresh_rate_hz;
+        int m_pulsewidth_usec_min;
+        int m_pulsewidth_usec_max;
+
+        int m_pulsewidth_usec_current;
 
     public:
 
-        AggregatMotor(PinName pwm_pin_name, int period_usec, float dc_min, float dc_max);
-        AggregatMotor(const PinMap &pwm_pin_map, int period_usec, float dc_min, float dc_max);
+        AggregatMotor(PinName pwm_pin_name, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max);
+        AggregatMotor(const PinMap &pwm_pin_map, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max);
+
+        void set_refresh_rate(int refresh_rate_hz);
 
         void set(float pos);
         float get();
@@ -39,7 +43,7 @@ class AggregatMotor {
             return get();
         }
 
-        void runloop();
+        // void run();
 
     protected:
 

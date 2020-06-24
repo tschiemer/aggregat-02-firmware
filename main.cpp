@@ -96,7 +96,7 @@ Config config = {
 
 volatile bool motors_running = false;
 AggregatMotor motors[MOTOR_COUNT] = {
-  AggregatMotor(MOTOR_1_PIN, MOTOR_PERIOD_USEC, MOTOR_DC_MIN, MOTOR_DC_MAX)
+  AggregatMotor(MOTOR_1_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC)
 };
 
 volatile int32_t channel_offset = CHANNEL_OFFSET;

@@ -1,29 +1,38 @@
 #include "AggregatMotor.h"
 
-AggregatMotor::AggregatMotor(PinName pwm_pin_name, int period_usec, float dc_min, float dc_max)
+AggregatMotor::AggregatMotor(PinName pwm_pin_name, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
     : m_pwm(pwm_pin_name)
 {
-    m_period_usec = period_usec;
-    m_dc_min = dc_min;
-    m_dc_max = dc_max;  
+    set_refresh_rate(refresh_rate_hz);
+    
+    m_pulsewidth_usec_min = pulsewidth_usec_min;
+    m_pulsewidth_usec_max = pulsewidth_usec_max;  
 
     init(); 
 }
 
-AggregatMotor::AggregatMotor(const PinMap &pwm_pin_map, int period_usec, float dc_min, float dc_max)
+AggregatMotor::AggregatMotor(const PinMap &pwm_pin_map, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
     : m_pwm(pwm_pin_map)
 {
-    m_period_usec = period_usec;
-    m_dc_min = dc_min;
-    m_dc_max = dc_max;
+    set_refresh_rate(refresh_rate_hz);
+
+    m_pulsewidth_usec_min = pulsewidth_usec_min;
+    m_pulsewidth_usec_max = pulsewidth_usec_max;  
 
     init();
 }
 
+void AggregatMotor::set_refresh_rate(int refresh_rate_hz)
+{
+    m_refresh_rate_hz = refresh_rate_hz;
+
+    float period_sec = 1.0 / ((float)refresh_rate_hz);
+
+    m_pwm.period(period_sec);
+}
+
 void AggregatMotor::init()
 {
-    m_pwm.period_us(m_period_usec);
-
     // start suspended
     m_pwm.suspend();
 }
@@ -40,18 +49,16 @@ void AggregatMotor::set(float pos)
         pos = 1.0;
     }
 
-    float dc = pos * (m_dc_max - m_dc_min) + m_dc_min;
+    m_pulsewidth_usec_current = pos * (m_pulsewidth_usec_max - m_pulsewidth_usec_min) + m_pulsewidth_usec_min;
 
-    printf("dc %f", dc);
+    // printf("pw %d", pw);
 
-    m_pwm = dc;
+    m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
 }
 
 float AggregatMotor::get()
 {
-    float dc = m_pwm;
-
-    return (dc - m_dc_min) / (m_dc_max - m_dc_min);
+    return (float)(m_pulsewidth_usec_current - m_pulsewidth_usec_min) / (float)(m_pulsewidth_usec_max - m_pulsewidth_usec_min);
 }
 
 void AggregatMotor::suspend()
@@ -64,7 +71,7 @@ void AggregatMotor::resume()
     m_pwm.resume();
 }
 
-void AggregatMotor::runloop()
-{
+// void AggregatMotor::run()
+// {
 
-}
+// }

@@ -10,9 +10,10 @@
 
 /************ MOTORS ************/
 
-#define MOTOR_PERIOD_USEC    1000
-#define MOTOR_DC_MIN         0.1
-#define MOTOR_DC_MAX         0.8
+#define MOTOR_REFRESH_RATE_HZ       60
+
+#define MOTOR_PULSEWIDTH_MIN_USEC   556
+#define MOTOR_PULSEWIDTH_MAX_USEC   2410
 
 #define MOTOR_COUNT         1
 
