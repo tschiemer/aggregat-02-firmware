@@ -15,8 +15,8 @@
 #include "lwip/apps/mdns.h"
 #endif
 
-#include "deps/midimessage/include/midimessage.h"
-#include "deps/midimessage/include/midimessage/simpleparser.h"
+#include "midimessage/midimessage.h"
+#include "midimessage/simpleparser.h"
 
 /************ TYPES ************/
 

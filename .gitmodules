@@ -1,0 +1,3 @@
+[submodule "deps/midimessage"]
+	path = deps/midimessage
+	url = https://github.com/tschiemer/midimessage
