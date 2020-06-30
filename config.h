@@ -27,31 +27,44 @@
 
 #define USE_USBMIDI 1
 
+
+#define USB_POWER_PIN PA_9
+#define USB_CONNECTED_LED LED1
+
 // default value
 #define USBMIDI_FORWARD_TO_MIDI true
-#define USBMIDI_FORWARD_TO_NET  true
+#define USBMIDI_FORWARD_TO_NET  false
 
 /************ MIDI ************/
 
 #define USE_MIDI 1
 
-#define MIDI_TX_PIN USBTX
-#define MIDI_RX_PIN USBRX
+#define MIDI_TX_PIN PD_5
+#define MIDI_RX_PIN PD_6
+
+// #define MIDI_BAUD   31250
+#define MIDI_BAUD   9600
+
+#define MIDI_BITS   8
+#define MIDI_PARITY BufferedSerial::None
+#define MIDI_STOP   1
 
 // default value
-#define MIDI_FORWARD_TO_USB true
-#define MIDI_FORWARD_TO_NET true
+#define MIDI_FORWARD_TO_USB false
+#define MIDI_FORWARD_TO_NET false
 
 
 /************ NETWORK BASED MIDI ************/
 
-#define USE_NETMIDI 1
+#define USE_NETMIDI 0
 
 // default value
-#define NETMIDI_FORWARD_TO_MIDI true
-#define NETMIDI_FORWARD_TO_USB  true
+#define NETMIDI_FORWARD_TO_MIDI false
+#define NETMIDI_FORWARD_TO_USB  false
 
 #define NET_HOSTNAME "Aggregat-02"
+
+
 // #define NET_HOSTNAME_MAXLEN 32
 
 // #define LWIP_MDNS_RESPONDER 1

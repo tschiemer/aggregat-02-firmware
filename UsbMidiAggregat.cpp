@@ -1,15 +1,40 @@
 #include "UsbMidiAggregat.h"
 
-UsbMidiAggregat::UsbMidiAggregat(bool connect_blocking, uint16_t vendor_id, uint16_t product_id, uint16_t product_release)
-    : USBMIDI(connect_blocking, vendor_id, product_id, product_release)
-{
+static UsbMidiAggregat * usbDevice = NULL;
 
+UsbMidiAggregat::UsbMidiAggregat(PinName power_pin, bool connect_blocking, uint16_t vendor_id, uint16_t product_id, uint16_t product_release)
+    : vbus(power_pin), USBMIDI(connect_blocking, vendor_id, product_id, product_release)
+{
+    init_vbus();
 }
 
-UsbMidiAggregat::UsbMidiAggregat(USBPhy *phy, uint16_t vendor_id, uint16_t product_id, uint16_t product_release)
-    : USBMIDI(phy, vendor_id, product_id, product_release)
+UsbMidiAggregat::UsbMidiAggregat(PinName power_pin, USBPhy *phy, uint16_t vendor_id, uint16_t product_id, uint16_t product_release)
+    : vbus(power_pin), USBMIDI(phy, vendor_id, product_id, product_release)
 {
+    init_vbus();
+}
 
+bool UsbMidiAggregat::connected()
+{
+    return vbus.read() && configured();
+}
+
+bool UsbMidiAggregat::just_reconnected()
+{
+    bool flag = vbus_flag;
+    vbus_flag = false;
+    return flag;
+}
+
+void UsbMidiAggregat::init_vbus()
+{
+    UsbMidiAggregat * self = this;
+
+    vbus.rise([self](){
+        self->vbus_flag = true;
+    });
+
+    vbus_flag = !!vbus.read();
 }
 
 const uint8_t *UsbMidiAggregat::string_iinterface_desc()
@@ -25,7 +50,7 @@ const uint8_t *UsbMidiAggregat::string_iinterface_desc()
 const uint8_t *UsbMidiAggregat::string_iproduct_desc()
 {
     static const uint8_t string_iproduct_descriptor[] = {
-        42,                                                       //bLength
+        24,                                                       //bLength
         STRING_DESCRIPTOR,                                          //bDescriptorType 0x03
         'A', 0, 'g', 0, 'g', 0, 'r', 0, 'e', 0, 'g', 0, 'a', 0, 't', 0, '-', 0, '0', 0, '2', 0 //bString iProduct - Aggregat-02
     };

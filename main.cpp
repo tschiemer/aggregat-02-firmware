@@ -39,7 +39,7 @@ typedef enum {
 
 typedef struct {
     ConfigState config_state;
-    u8_t device_id;
+    uint8_t device_id;
     // volatile uint8_t channel_offset;
     // volatile uint8_t controller_offset;
 } __attribute__((packed)) Config;
@@ -58,10 +58,12 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source);
 
 #if USE_USBMIDI == 1
 void usbmidi_init();
+void usbmidi_run();
 void usbmidi_event_callback();
 void usbmidi_tx(uint8_t * buffer, size_t length);
 #else //USE_USBMIDI == 0
 #define usbmidi_init()
+#define usbmidi_run()
 #define usbmidi_tx()
 #endif //USE_USBMIDI
 
@@ -103,7 +105,8 @@ volatile int32_t channel_offset = CHANNEL_OFFSET;
 volatile int32_t controller_offset = CONTROLLER_OFFSET;
 
 #if USE_USBMIDI == 1
-UsbMidiAggregat usbmidi(false);
+DigitalOut usbmidi_led(USB_CONNECTED_LED);
+UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
 bool usb_to_midi = USBMIDI_FORWARD_TO_MIDI;
 bool usb_to_net = USBMIDI_FORWARD_TO_NET;
 #endif
@@ -200,6 +203,12 @@ void controller_init()
 
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 {
+    printf("controller (len %d) ", length);
+    for(int i = 0; i < length; i++){
+        printf("%02x", buffer[i]);
+    }
+    printf("\n");
+
     MIDIMessage msg;
 
     msg.from_raw(buffer, length);
@@ -248,6 +257,23 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         }
         
     }
+
+    if (source == SourceUsb){
+        if (usb_to_midi){
+            midi_tx(buffer, length);
+        }
+        if (usb_to_net){
+            netmidi_tx(buffer, length);
+        }
+    }
+    if (source == SourceMidi){
+        if (midi_to_usb){
+            usbmidi_tx(buffer, length);
+        }
+        if (midi_to_net){
+            netmidi_tx(buffer, length);
+        }
+    }
 }
 
 
@@ -255,31 +281,39 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
 void usbmidi_init()
 {
-    usbmidi.attach(usbmidi_event_callback);
-
-    usbmidi.connect();
+    usbmidi.attach([](){
+        // do nothing (it's really sad, but if there is no callback attached, it doesn't work...)
+    });
 }
 
-void usbmidi_event_callback()
+void usbmidi_run()
 {
-    if (usbmidi.ready() == false){
+    usbmidi_led = usbmidi.connected();
+
+    if (usbmidi.connected() == false){
+
+        if (usbmidi.just_reconnected()){
+            midi_tx((uint8_t*)"1\n", 2);
+            usbmidi.connect();
+        }
+
+        return;
+    } 
+
+    if (!usbmidi.ready()){
         return;
     }
 
     if (usbmidi.readable()){
+        
+        // mark activity
+        usbmidi_led = 0;
+
         MIDIMessage msg;
 
         usbmidi.read(&msg);
 
-
-        if (usb_to_midi){
-            midi_tx(msg.data, msg.length);
-        }
-        if (usb_to_net){
-            netmidi_tx(msg.data, msg.length);
-        }
-
-        controller_handle_msg(msg.data, msg.length, SourceUsb);
+        controller_handle_msg(&msg.data[1], msg.length - 1, SourceUsb);
     }
 }
 
@@ -288,7 +322,6 @@ void usbmidi_tx(uint8_t * buffer, size_t length)
     if (usbmidi.ready() == false){
         return;
     }
-
     
     MIDIMessage msg;
 
@@ -296,6 +329,7 @@ void usbmidi_tx(uint8_t * buffer, size_t length)
 
     usbmidi.write(msg);
 }
+
 #endif //USE_USBMIDI == 1
 
 
@@ -303,16 +337,35 @@ void usbmidi_tx(uint8_t * buffer, size_t length)
 
 void midi_init()
 {
+    printf("midi_init()\n");
+
     // setup MIDI UART according to specs
-    midi.set_baud(31250); // 31.25kbaud
-    midi.set_format(8, BufferedSerial::None, 1); // 8 data bits, no parity, 1 stop bit
+    midi.set_baud(MIDI_BAUD); // 31.25kbaud
+    midi.set_format(MIDI_BITS, MIDI_PARITY, MIDI_STOP); // 8 data bits, no parity, 1 stop bit
     midi.set_flow_control(BufferedSerial::Disabled);
 
     midi.set_blocking(false);
 
-    uint8_t buffer[128];
+    static uint8_t buffer[128];
 
     MidiMessage::simpleparser_init(&midi_parser, true, (uint8_t*)&buffer, sizeof(buffer), midi_rx, NULL, NULL);
+}
+
+void midi_run()
+{
+    static uint8_t buffer[128];
+    
+    if (midi.readable()){
+
+        size_t rlen = midi.read(buffer, sizeof(buffer));
+
+        if (rlen > 0){
+            // echo
+            // midi_tx(buffer,rlen);
+
+            MidiMessage::simpleparser_receivedData(&midi_parser, buffer, (uint8_t)rlen);
+        }
+    }
 }
 
 void midi_tx(uint8_t * buffer, size_t length)
@@ -327,13 +380,6 @@ void midi_tx(uint8_t * buffer, size_t length)
 
 void midi_rx(uint8_t * buffer, uint8_t length, void * context)
 {
-    if (midi_to_usb){
-        usbmidi_tx(buffer, length);
-    }
-    if (midi_to_net){
-        netmidi_tx(buffer, length);
-    }
-
     controller_handle_msg(buffer, length, SourceMidi);
 }
 
@@ -361,24 +407,6 @@ void midi_rx(uint8_t * buffer, uint8_t length, void * context)
 
 // }
 
-void midi_run()
-{
-    uint8_t buffer[128];
-    size_t length = 0;
-    // midi_state = StateStarted;
-
-    // while(midi_state == StateStarted) {
-        if (midi.readable()){
-            size_t rlen = midi.read(&buffer[length], sizeof(buffer) - length);
-
-            if (rlen > 0){
-                MidiMessage::simpleparser_receivedData(&midi_parser, buffer, (uint8_t)length);
-            }
-        }
-    // }
-
-    // midi_state = StateStopped;
-}
     
 #endif //USE_MIDI == 1
 
@@ -420,26 +448,33 @@ void netmidi_tx(uint8_t * buffer, size_t length)
 // main() runs in its own thread in the OS
 int main()
 {
+    midi_tx((uint8_t*)"RESTART\n",8);
+
     load_config();
     
     // initialize motors
-    motors_init();
+    // motors_init();
 
     // initialize controller
-    controller_init();
+    // controller_init();
 
     // any com interface initialization
     usbmidi_init();
     midi_init();
-    netmidi_init();
+    // netmidi_init();
 
     // start up handlers
     // midi_start();
 
-    motors_resume();
+    // motors_resume();
 
     while (true) {
+        usbmidi_run();
         midi_run();
+
+        // wait_us(1000);
+
+        // midi_tx((uint8_t*)"hi!\n", 4);
     }
 }
 

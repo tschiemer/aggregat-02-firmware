@@ -1,0 +1,13 @@
+{
+    "config": {
+        "usb_speed": {
+            "value": "USE_USB_HS",
+            "help": "USE_USB_HS"
+        }
+    },
+    "target_overrides": {
+        "*": {
+            "target.device_has_add": ["USBDEVICE"]
+        }
+    }
+}
