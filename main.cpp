@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "mbed.h"
+#include "stm32h7xx_ll_utils.h"
 
 #include "AggregatMotor.h"
 
@@ -10,9 +10,8 @@
 
 #if USE_NETMIDI == 1
 #include "EthernetInterface.h"
-// #include "ns_mdns_api.h"
-#include "LWIPStack.h"
-#include "lwip/apps/mdns.h"
+// #include "LWIPStack.h"
+#include "nsapi_types.h"
 #endif
 
 #include "midimessage/midimessage.h"
@@ -39,7 +38,7 @@ typedef enum {
 
 typedef struct {
     ConfigState config_state;
-    uint8_t device_id;
+    uint32_t device_id;
     // volatile uint8_t channel_offset;
     // volatile uint8_t controller_offset;
 } __attribute__((packed)) Config;
@@ -59,8 +58,9 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source);
 #if USE_USBMIDI == 1
 void usbmidi_init();
 void usbmidi_run();
-void usbmidi_event_callback();
 void usbmidi_tx(uint8_t * buffer, size_t length);
+
+void usbmidi_event_callback();
 #else //USE_USBMIDI == 0
 #define usbmidi_init()
 #define usbmidi_run()
@@ -71,22 +71,24 @@ void usbmidi_tx(uint8_t * buffer, size_t length);
 void midi_init();
 void midi_run();
 void midi_tx(uint8_t * buffer, size_t length);
+
 void midi_rx(uint8_t * buffer, uint8_t length, void * context); // parser callback handler
-// void midi_start();
-// void midi_stop();
 #else //USE_MIDI == 0
 #define midi_init()
 #define midi_tx(buffer, length)
 #define midi_run()
-// #define midi_start()
-// #define midi_stop()
 #endif //USE_MIDI
 
 #if USE_NETMIDI == 1
 void netmidi_init();
+void netmidi_run();
 void netmidi_tx(uint8_t * buffer, size_t length);
+
+void eth_status_changed(nsapi_event_t evt, intptr_t intptr);
+void eth_ifup();
 #else //USE_NETMIDI == 0
 #define netmidi_init()
+#define netmidi_run()
 #define netmidi_tx(buffer, length)
 #endif //USE_NETMIDI
 
@@ -123,10 +125,17 @@ MidiMessage::SimpleParser_t midi_parser;
 
 #if USE_NETMIDI == 1
 EthernetInterface eth;
+Thread net_thread;
+bool net_thread_ran_before = false;
+SocketAddress ip;
 UDPSocket udp_sock;
+
+bool eth_reconnect = false; // only set if was connected
+
 bool net_to_midi = NETMIDI_FORWARD_TO_MIDI;
 bool net_to_usb = NETMIDI_FORWARD_TO_USB;
-char net_hostname[] = NET_HOSTNAME;
+char net_hostname[64] = "";
+char net_servicename[64] = "";
 // ns_mdns_t mdns_responder = NULL;
 #endif
 
@@ -157,7 +166,13 @@ inline float s14_to_pos(int value)
 
 void load_config()
 {
-    config.device_id = 1;
+    uint32_t uidxor = LL_GetUID_Word0() ^ LL_GetUID_Word1() ^ LL_GetUID_Word2();
+
+    config.device_id = uidxor;
+
+
+    srand(uidxor + time(NULL));
+
     // config.channel_offset = CHANNEL_OFFSET;
     // config.controller_offset = CONTROLLER_OFFSET;
 }
@@ -354,7 +369,7 @@ void midi_init()
 void midi_run()
 {
     static uint8_t buffer[128];
-    
+
     if (midi.readable()){
 
         size_t rlen = midi.read(buffer, sizeof(buffer));
@@ -414,29 +429,231 @@ void midi_rx(uint8_t * buffer, uint8_t length, void * context)
 
 void netmidi_init()
 {
-    // udp_sock.open()
+    const char * mac = eth.get_mac_address();
+    printf("mac %s\n", mac ? mac : "none");
 
-    // mdns_resp_init();
-    // mdns_responder = ns_mdns_server_start(NET_HOSTNAME, 0,0,0);
+    sprintf(net_hostname, NET_HOSTNAME_FMT, config.device_id);
+    printf("hostname %s\n", net_hostname);
 
+    sprintf(net_servicename, NET_SERVICENAME_FMT, config.device_id);
+    printf("servicename %s\n", net_servicename);
 
-    sprintf(net_hostname, "%s-%d", NET_HOSTNAME, config.device_id);
-
-    // LWIP & lwip = LWIP::get_instance();
-
-    
-
-    // mdns_resp_init();
+    eth.add_event_listener(eth_status_changed);
 
 
-    // mdns_resp_add_netif(net_hostname, );
-    // mdns_resp_add_service();
+    if (udp_sock.open(&eth)){
+        printf("open error\n");
+        return;
+    }
+    printf("opened\n");
+
+    if (udp_sock.bind(7)){
+        printf("bind error\n");
+        return;
+    }
+    printf("bound to port\n");
+
+    udp_sock.set_blocking(false);
+
+    // eth_reconnect = true;
+
+    net_thread.start(eth_ifup);
 }
 
-void netmidi_deinit()
+void eth_status_changed(nsapi_event_t evt, intptr_t intptr)
 {
-    // mdns_resp_remove_netif();
+    if (evt != NSAPI_EVENT_CONNECTION_STATUS_CHANGE){
+        return;
+    }
+
+    static bool eth_was_up = false;
+
+    switch(eth.get_connection_status()){
+        case NSAPI_STATUS_LOCAL_UP: 
+            printf("eth local up\n");
+            return;
+
+        case NSAPI_STATUS_GLOBAL_UP:
+            printf("eth global up\n");
+            eth_was_up = true;
+            return;
+
+        case NSAPI_STATUS_DISCONNECTED: 
+            printf("eth disconnected!\n");
+            // eth.disconnect();
+            return;
+
+        case NSAPI_STATUS_CONNECTING:
+            printf("eth connecting\n");
+            if (eth_was_up){
+                eth_was_up = false;
+                eth_reconnect = true;
+                printf("should reconnect\n");
+                // eth.disconnect();
+            }
+            return;
+
+        case NSAPI_STATUS_ERROR_UNSUPPORTED:
+            printf("eth unsupported\n");
+            return;
+    }
 }
+
+bool eth_connect()
+{
+    // printf("eth.status = %d\n", eth.get_connection_status());
+    if (eth.get_connection_status() != NSAPI_STATUS_DISCONNECTED){
+        eth.disconnect();
+    }
+
+    eth.set_default_parameters();
+    // eth.set_dhcp(true);
+
+    // to force dhcp
+    eth.set_network("0.0.0.0", "0.0.0.0", "0.0.0.0");
+
+    int res;
+    
+    do {
+        res = eth.connect();
+    } while( res == NSAPI_ERROR_NO_CONNECTION);
+
+    if (res == NSAPI_ERROR_OK) {
+    
+        // Show the network address
+        eth.get_ip_address(&ip);
+        printf("%s: %s\n", ip.get_ip_version() == NSAPI_IPv4 ? "ipv4" : "ipv6", ip.get_ip_address());
+
+        return true;
+    }
+
+    if (res != NSAPI_ERROR_DHCP_FAILURE){
+        printf("connect failed: %d\n", res);
+        return false;
+    }
+
+    printf("dhcp timeout\n");
+
+
+    res = eth.get_ipv6_link_local_address(&ip);
+
+    if (res == NSAPI_ERROR_OK){
+        printf("ipv6 link-local: %s\n", ip.get_ip_address());
+        return true;
+    }
+
+    if (res == NSAPI_ERROR_UNSUPPORTED){
+        printf("ipv6 link-local not supported\n");
+    } else {
+        printf("ipv6 link-local fail: %d\n", res);
+    }
+
+    // has to disconnect to set manual address
+    eth.disconnect();
+
+    // setup ipv4 link-local address
+    uint8_t s3 = (((config.device_id >> 24) ^ (config.device_id >> 16)) % 254) + 1;
+    uint8_t s4 = (config.device_id >> 8) ^ config.device_id;
+    char ll[20] = "";
+    sprintf(ll, "169.254.%hhu.%hhu", s3, s4);
+    ip.set_ip_address(ll);
+
+
+    printf("Using ipv4 link-local: %s/16\n", ll);
+    eth.set_network(ip, "255.255.0.0", "0.0.0.0");
+
+    if (eth.connect()){
+        printf("link-local connect fail!\n");
+        return false;
+    } 
+
+    return true;
+}
+
+void eth_ifup()
+{
+    printf("eth_ifup()\n");
+
+    eth_reconnect = true;
+
+    while (1){
+
+        if (eth_reconnect == false){
+            ThisThread::sleep_for(1000);
+            continue;
+        }
+
+        if (eth_connect() == false){
+            return;
+        }
+        
+        eth_reconnect = false;
+
+        SocketAddress addr;
+
+        uint8_t hello[] = "hello!";
+
+        addr.set_ip_address("169.254.108.82");
+        addr.set_port(6666);
+
+        int r = udp_sock.sendto(addr, hello, sizeof(hello));
+        if (r < 0){
+            printf("tx err %d\n", r);
+            continue;
+        } else {
+            printf("sent hello\n");
+        }
+    }
+
+}
+
+void netmidi_run()
+{
+    if (eth.get_connection_status() != NSAPI_STATUS_GLOBAL_UP){
+
+        // if (eth_reconnect){
+        //     eth_reconnect = false;
+
+        //     // net_thread.terminate();
+        //     // eth.disconnect();
+        //     // Thread t;
+
+        //     // t.start(eth_ifup);
+
+        //     // if (net_thread_ran_before){
+        //     //     net_thread_ran_before = false;
+        //     //     net_thread.join();
+        //     // }
+        //     // net_thread.start(eth_ifup);
+        //     // net_thread_ran_before = true;
+        //     eth_ifup();
+
+        // }
+
+        return;
+    }
+
+    SocketAddress addr;
+
+    addr.set_ip_address("169.254.108.82");
+    addr.set_port(6666);
+
+    uint8_t data[256];
+
+    nsapi_size_or_error_t res = udp_sock.recv(data, sizeof(data));
+
+    if (res > 0){
+        data[res] = '\0';
+        printf("udp rx (%d) %s", res, data);
+        
+        // echo back
+        udp_sock.sendto(addr, data, res);
+    }
+}
+// void netmidi_deinit()
+// {
+//     // mdns_resp_remove_netif();
+// }
 
 void netmidi_tx(uint8_t * buffer, size_t length)
 {
@@ -448,7 +665,8 @@ void netmidi_tx(uint8_t * buffer, size_t length)
 // main() runs in its own thread in the OS
 int main()
 {
-    midi_tx((uint8_t*)"RESTART\n",8);
+    printf("\nRESTART\n");
+    // midi_tx((uint8_t*)"RESTART\n",8);
 
     load_config();
     
@@ -461,7 +679,7 @@ int main()
     // any com interface initialization
     usbmidi_init();
     midi_init();
-    // netmidi_init();
+    netmidi_init();
 
     // start up handlers
     // midi_start();
@@ -471,10 +689,7 @@ int main()
     while (true) {
         usbmidi_run();
         midi_run();
-
-        // wait_us(1000);
-
-        // midi_tx((uint8_t*)"hi!\n", 4);
+        netmidi_run();
     }
 }
 

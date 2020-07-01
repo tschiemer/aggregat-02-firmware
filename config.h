@@ -56,13 +56,14 @@
 
 /************ NETWORK BASED MIDI ************/
 
-#define USE_NETMIDI 0
+#define USE_NETMIDI 1
 
 // default value
 #define NETMIDI_FORWARD_TO_MIDI false
 #define NETMIDI_FORWARD_TO_USB  false
 
-#define NET_HOSTNAME "Aggregat-02"
+#define NET_HOSTNAME_FMT "Aggregat-02-%08x"
+#define NET_SERVICENAME_FMT "Aggregat 02 (%08x)"
 
 
 // #define NET_HOSTNAME_MAXLEN 32
