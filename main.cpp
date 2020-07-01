@@ -33,6 +33,12 @@ typedef enum {
 } Source;
 
 typedef enum {
+    ExclusiveSourceNone,
+    ExclusiveSourceUsb,
+    ExclusiveSourceNet
+} ExclusiveSource;
+
+typedef enum {
     ConfigStateValid = 0x1337BEEF
 } ConfigState;
 
@@ -106,6 +112,9 @@ AggregatMotor motors[MOTOR_COUNT] = {
 volatile int32_t channel_offset = CHANNEL_OFFSET;
 volatile int32_t controller_offset = CONTROLLER_OFFSET;
 
+Mutex exclusive_source_mutex;
+ExclusiveSource exclusive_source = ExclusiveSourceNone;
+
 #if USE_USBMIDI == 1
 DigitalOut usbmidi_led(USB_CONNECTED_LED);
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
@@ -126,11 +135,10 @@ MidiMessage::SimpleParser_t midi_parser;
 #if USE_NETMIDI == 1
 EthernetInterface eth;
 Thread net_thread;
-bool net_thread_ran_before = false;
 SocketAddress ip;
 UDPSocket udp_sock;
 
-bool eth_reconnect = false; // only set if was connected
+bool eth_reconnect = false; 
 
 bool net_to_midi = NETMIDI_FORWARD_TO_MIDI;
 bool net_to_usb = NETMIDI_FORWARD_TO_USB;
@@ -218,7 +226,7 @@ void controller_init()
 
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 {
-    printf("controller (len %d) ", length);
+    printf("CMD (len %d) ", length);
     for(int i = 0; i < length; i++){
         printf("%02x", buffer[i]);
     }
@@ -307,22 +315,45 @@ void usbmidi_run()
 
     if (usbmidi.connected() == false){
 
+        // if (exclusive_source == ExclusiveSourceUsb){
+        //     exclusive_source = ExclusiveSourceNone;
+        // }
+
+        // if (exclusive_source != ExclusiveSourceNone){
+        //     return;
+        // }
+        
+        // if (exclusive_source_mutex.trylock() == false){
+        //     return;
+        // }
+
         if (usbmidi.just_reconnected()){
-            midi_tx((uint8_t*)"1\n", 2);
+            // midi_tx((uint8_t*)"1\n", 2);
             usbmidi.connect();
         }
+
+        // while(usbmidi.connected() == false){
+        //     printf("1\n");
+        //     ThisThread::sleep_for(100);
+        // }
+
+        // exclusive_source = ExclusiveSourceUsb;
+
+        // exclusive_source_mutex.unlock();
 
         return;
     } 
 
+    // printf("usbmidi.ready() = %d\n", usbmidi.ready());
     if (!usbmidi.ready()){
         return;
     }
 
+    
     if (usbmidi.readable()){
-        
+        printf("ubsmidi.readable() = %d\n", usbmidi.readable());    
         // mark activity
-        usbmidi_led = 0;
+        // usbmidi_led = 0;
 
         MIDIMessage msg;
 
@@ -507,7 +538,6 @@ bool eth_connect()
     }
 
     eth.set_default_parameters();
-    // eth.set_dhcp(true);
 
     // to force dhcp
     eth.set_network("0.0.0.0", "0.0.0.0", "0.0.0.0");
@@ -517,6 +547,10 @@ bool eth_connect()
     do {
         res = eth.connect();
     } while( res == NSAPI_ERROR_NO_CONNECTION);
+
+    // if (res == NSAPI_ERROR_NO_CONNECTION){
+    //     return false;
+    // }
 
     if (res == NSAPI_ERROR_OK) {
     
@@ -578,31 +612,45 @@ void eth_ifup()
 
     while (1){
 
+        // if (exclusive_source == ExclusiveSourceNone){
+        //     ThisThread::sleep_for(1000);
+        //     continue;
+        // }
+
+        // if (exclusive_source_mutex.trylock() == false){
+        //     continue;
+        // }
+
         if (eth_reconnect == false){
             ThisThread::sleep_for(1000);
             continue;
         }
 
+
         if (eth_connect() == false){
+            // exclusive_source_mutex.unlock();
             return;
         }
         
+        // exclusive_source = ExclusiveSourceNet;
+        // exclusive_source_mutex.unlock();
+
         eth_reconnect = false;
 
-        SocketAddress addr;
+        // SocketAddress addr;
 
-        uint8_t hello[] = "hello!";
+        // uint8_t hello[] = "hello!";
 
-        addr.set_ip_address("169.254.108.82");
-        addr.set_port(6666);
+        // addr.set_ip_address("169.254.108.82");
+        // addr.set_port(6666);
 
-        int r = udp_sock.sendto(addr, hello, sizeof(hello));
-        if (r < 0){
-            printf("tx err %d\n", r);
-            continue;
-        } else {
-            printf("sent hello\n");
-        }
+        // int r = udp_sock.sendto(addr, hello, sizeof(hello));
+        // if (r < 0){
+        //     printf("tx err %d\n", r);
+        //     continue;
+        // } else {
+        //     printf("sent hello\n");
+        // }
     }
 
 }
