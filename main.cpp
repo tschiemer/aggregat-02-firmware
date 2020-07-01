@@ -66,7 +66,8 @@ void usbmidi_init();
 void usbmidi_run();
 void usbmidi_tx(uint8_t * buffer, size_t length);
 
-void usbmidi_event_callback();
+// void usbmidi_event_callback();
+void usbmidi_rx(uint8_t * buffer, uint8_t length, void * context); // parser callback handler
 #else //USE_USBMIDI == 0
 #define usbmidi_init()
 #define usbmidi_run()
@@ -120,6 +121,8 @@ DigitalOut usbmidi_led(USB_CONNECTED_LED);
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
 bool usb_to_midi = USBMIDI_FORWARD_TO_MIDI;
 bool usb_to_net = USBMIDI_FORWARD_TO_NET;
+
+MidiMessage::SimpleParser_t usbmidi_parser;
 #endif
 
 #if USE_MIDI == 1
@@ -167,6 +170,9 @@ inline float s14_to_pos(int value)
 {
     return u14_to_pos(value + 8192);
 }
+
+
+void do_nothing(){}
 
 /************ FUNCTIONS ************/
 
@@ -265,6 +271,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
             if (0 <= motori && motori < MOTOR_COUNT){
                 float pos = u7_to_pos(msg.value());
+                printf("motor[%d] = %d\n", motori, (int)(pos*100));
                 motors[motori] = pos;
             }
         }
@@ -304,9 +311,14 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
 void usbmidi_init()
 {
-    usbmidi.attach([](){
-        // do nothing (it's really sad, but if there is no callback attached, it doesn't work...)
-    });
+    // usbmidi.attach(do_nothing);
+    // [](){
+    //     // do nothing (it's really sad, but if there is no callback attached, it doesn't work...)
+    // });
+
+    static uint8_t buffer[128];
+
+    MidiMessage::simpleparser_init(&usbmidi_parser, true, (uint8_t*)&buffer, sizeof(buffer), usbmidi_rx, NULL, NULL);
 }
 
 void usbmidi_run()
@@ -359,8 +371,18 @@ void usbmidi_run()
 
         usbmidi.read(&msg);
 
-        controller_handle_msg(&msg.data[1], msg.length - 1, SourceUsb);
+        if (msg.length <= 1){
+            return;
+        }
+
+        MidiMessage::simpleparser_receivedData(&usbmidi_parser, &msg.data[1], (uint8_t)msg.length -1);
+        // controller_handle_msg(&msg.data[1], msg.length - 1, SourceUsb);
     }
+}
+
+void usbmidi_rx(uint8_t * buffer, uint8_t length, void * context) // parser callback handler
+{
+    controller_handle_msg(buffer, length, SourceUsb);
 }
 
 void usbmidi_tx(uint8_t * buffer, size_t length)
@@ -369,6 +391,11 @@ void usbmidi_tx(uint8_t * buffer, size_t length)
         return;
     }
     
+    // if (usbmidi.writable() == false){
+    //     printf("usbmidi not writable!\n");
+    //     return;
+    // }
+
     MIDIMessage msg;
 
     msg.from_raw(buffer, length);
@@ -719,10 +746,10 @@ int main()
     load_config();
     
     // initialize motors
-    // motors_init();
+    motors_init();
 
     // initialize controller
-    // controller_init();
+    controller_init();
 
     // any com interface initialization
     usbmidi_init();
@@ -732,7 +759,7 @@ int main()
     // start up handlers
     // midi_start();
 
-    // motors_resume();
+    motors_resume();
 
     while (true) {
         usbmidi_run();
