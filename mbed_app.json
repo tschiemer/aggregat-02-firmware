@@ -8,7 +8,8 @@
     "target_overrides": {
         "*": {
             "target.device_has_add": ["USBDEVICE"],
-            "target.network-default-interface-type": "ETHERNET"
+            "target.network-default-interface-type": "ETHERNET",
+            "lwip.dhcp-timeout": 5
         }
     }
 }

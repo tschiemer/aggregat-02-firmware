@@ -129,6 +129,8 @@ UDPSocket udp_sock;
 
 bool eth_reconnect = false; 
 
+DigitalOut net_led(NET_STATUS_LED);
+
 bool net_to_midi = NETMIDI_FORWARD_TO_MIDI;
 bool net_to_usb = NETMIDI_FORWARD_TO_USB;
 char net_hostname[64] = "";
@@ -224,7 +226,6 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     }
     printf("\n");
 
-// return;
 
     #if ENABLE_CONTROLLER_LOGIC == 1
     MIDIMessage msg;
@@ -247,7 +248,10 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         // 0xFF = reset
         if (msg.data[0] == 0xFF){
             system_reset();
+            printf("system_reset??\n");
         }
+        #else
+        printf("ENABLE_SYSTEM_RESET == 0\n");
         #endif
     }
 
@@ -450,6 +454,7 @@ void netmidi_init()
     udp_sock.set_blocking(false);
 
     // eth_reconnect = true;
+    
 
     net_thread.start(eth_ifup);
 }
@@ -468,13 +473,12 @@ void eth_status_changed(nsapi_event_t evt, intptr_t intptr)
             return;
 
         case NSAPI_STATUS_GLOBAL_UP:
-            printf("eth global up\n");
             eth_was_up = true;
+            printf("eth global up\n");
             return;
 
         case NSAPI_STATUS_DISCONNECTED: 
             printf("eth disconnected!\n");
-            // eth.disconnect();
             return;
 
         case NSAPI_STATUS_CONNECTING:
@@ -509,7 +513,7 @@ bool eth_connect()
     
     do {
         res = eth.connect();
-    } while( res == NSAPI_ERROR_NO_CONNECTION);
+    } while( res != NSAPI_ERROR_OK && res != NSAPI_ERROR_DHCP_FAILURE );
 
     // if (res == NSAPI_ERROR_NO_CONNECTION){
     //     return false;
@@ -621,6 +625,8 @@ void eth_ifup()
 
 void netmidi_run()
 {
+    net_led = eth.get_connection_status() == NSAPI_STATUS_GLOBAL_UP;
+
     if (eth.get_connection_status() != NSAPI_STATUS_GLOBAL_UP){
         return;
     }

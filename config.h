@@ -8,7 +8,7 @@
 
 #define ENABLE_SYSTEM_RESET 1
 
-#define ENABLE_CONTROLLER_LOGIC   0
+#define ENABLE_CONTROLLER_LOGIC   1
 
 /************ MOTORS ************/
 
@@ -36,7 +36,7 @@
 
 
 #define USB_POWER_PIN PA_9
-#define USB_CONNECTED_LED LED2
+#define USB_CONNECTED_LED LED1
 
 // default value
 #define USBMIDI_FORWARD_TO_MIDI true
@@ -63,7 +63,9 @@
 
 /************ NETWORK BASED MIDI ************/
 
-#define USE_NETMIDI 0
+#define USE_NETMIDI 1
+
+#define NET_STATUS_LED LED2
 
 // default value
 #define NETMIDI_FORWARD_TO_MIDI true
