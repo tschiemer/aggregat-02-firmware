@@ -1,3 +1,6 @@
+#ifndef USBMIDI_AGGREGAT_H
+#define USBMIDI_AGGREGAT_H
+
 #include "USBMIDI.h"
 #include "PinNames.h"
 #include "InterruptIn.h"
@@ -26,3 +29,5 @@ class UsbMidiAggregat : public USBMIDI {
         const uint8_t *string_iinterface_desc();
 
 };
+
+#endif //USBMIDI_AGGREGAT_H

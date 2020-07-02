@@ -8,16 +8,23 @@
 
 #define ENABLE_SYSTEM_RESET 1
 
+#define ENABLE_CONTROLLER_LOGIC   0
+
 /************ MOTORS ************/
 
-#define MOTOR_REFRESH_RATE_HZ       60
+// #define MOTOR_REFRESH_RATE_HZ       60
 
-#define MOTOR_PULSEWIDTH_MIN_USEC   556
-#define MOTOR_PULSEWIDTH_MAX_USEC   2410
+// #define MOTOR_PULSEWIDTH_MIN_USEC   556
+// #define MOTOR_PULSEWIDTH_MAX_USEC   2410
+
+#define MOTOR_REFRESH_RATE_HZ 50
+
+#define MOTOR_PULSEWIDTH_MIN_USEC   0
+#define MOTOR_PULSEWIDTH_MAX_USEC   20000000
 
 #define MOTOR_COUNT         1
 
-#define MOTOR_1_PIN         LED1
+#define MOTOR_1_PIN         PWM_OUT // PA_15
 #define MOTOR_2_PIN         LED2
 #define MOTOR_3_PIN         LED3
 #define MOTOR_4_PIN         LED4
@@ -29,7 +36,7 @@
 
 
 #define USB_POWER_PIN PA_9
-#define USB_CONNECTED_LED LED1
+#define USB_CONNECTED_LED LED2
 
 // default value
 #define USBMIDI_FORWARD_TO_MIDI true
@@ -42,24 +49,24 @@
 #define MIDI_TX_PIN PD_5
 #define MIDI_RX_PIN PD_6
 
-// #define MIDI_BAUD   31250
-#define MIDI_BAUD   9600
+#define MIDI_BAUD   31250
+// #define MIDI_BAUD   9600
 
 #define MIDI_BITS   8
 #define MIDI_PARITY BufferedSerial::None
 #define MIDI_STOP   1
 
 // default value
-#define MIDI_FORWARD_TO_USB false
-#define MIDI_FORWARD_TO_NET false
+#define MIDI_FORWARD_TO_USB true
+#define MIDI_FORWARD_TO_NET true
 
 
 /************ NETWORK BASED MIDI ************/
 
-#define USE_NETMIDI 1
+#define USE_NETMIDI 0
 
 // default value
-#define NETMIDI_FORWARD_TO_MIDI false
+#define NETMIDI_FORWARD_TO_MIDI true
 #define NETMIDI_FORWARD_TO_USB  false
 
 #define NET_HOSTNAME_FMT "Aggregat-02-%08x"
