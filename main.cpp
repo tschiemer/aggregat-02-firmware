@@ -9,7 +9,7 @@
 #endif
 
 #if USE_NETMIDI == 1
-// low level interfaces need to solve platform bug
+// low level interfaces needed to solve platform bug
 #include "stm32h743xx.h"
 #include "stm32xx_emac.h"
 
@@ -17,6 +17,7 @@
 // #include "LWIPStack.h"
 #include "nsapi_types.h"
 
+// mdns responder
 #include "minimr.h"
 #endif
 
@@ -326,6 +327,15 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
             netmidi_tx(buffer, length);
         }
     }
+
+    if (source == SourceNet){
+        if (net_to_usb){
+            usbmidi_tx(buffer, length);
+        }
+        if (net_to_midi){
+            netmidi_tx(buffer, length);
+        }
+    }
 }
 
 
@@ -541,6 +551,7 @@ void eth_status_changed(nsapi_event_t evt, intptr_t intptr)
             if (eth_was_up){
                 eth_was_up = false;
                 eth_reconnect = true;
+                mdns_sock.leave_multicast_group(mdns_addr);
                 printf("should reconnect\n");
                 // eth.disconnect();
             }
