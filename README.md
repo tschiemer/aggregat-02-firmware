@@ -10,7 +10,10 @@ https://aggregat.zhdk.ch/
 - [x] Classical MIDI (over UART) connectivity
 - [x] Ethernet-based networking
   - [x] DHCP or link-local addressing
-  - [ ] [mDNS / DNS-SD](https://github.com/tschiemer/minimr) based host/service discovery
+  - [] [mDNS / DNS-SD](https://github.com/tschiemer/minimr) based host/service discovery
+     - [x] using hardware id as part of hostname
+     - [ ] dynamic, simple hostname
+     - [ ] service???
   - [ ] Control interface TBD
     1. Raw UDP (quasi simple)
     2. *Proposed* [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)

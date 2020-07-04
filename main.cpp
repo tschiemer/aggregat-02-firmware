@@ -9,13 +9,20 @@
 #endif
 
 #if USE_NETMIDI == 1
+// low level interfaces need to solve platform bug
+#include "stm32h743xx.h"
+#include "stm32xx_emac.h"
+
 #include "EthernetInterface.h"
 // #include "LWIPStack.h"
 #include "nsapi_types.h"
+
+#include "minimr.h"
 #endif
 
 #include "midimessage/midimessage.h"
 #include "midimessage/simpleparser.h"
+
 
 /************ TYPES ************/
 
@@ -80,6 +87,9 @@ void netmidi_tx(uint8_t * buffer, size_t length);
 
 void eth_status_changed(nsapi_event_t evt, intptr_t intptr);
 void eth_ifup();
+
+void mdns_configure();
+int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr, ...);
 #else //USE_NETMIDI == 0
 #define netmidi_init()
 #define netmidi_run()
@@ -133,9 +143,26 @@ DigitalOut net_led(NET_STATUS_LED);
 
 bool net_to_midi = NETMIDI_FORWARD_TO_MIDI;
 bool net_to_usb = NETMIDI_FORWARD_TO_USB;
+
 char net_hostname[64] = "";
 char net_servicename[64] = "";
-// ns_mdns_t mdns_responder = NULL;
+
+minimr_dns_rr_a RR_A = {
+    .type = MINIMR_DNS_TYPE_A,
+    .cache_class = MINIMR_DNS_CACHEFLUSH | MINIMR_DNS_CLASS_IN,
+    .ttl = 120,
+    .fun = mdns_rr_callback
+};
+minimr_dns_rr_aaaa RR_AAAA = {
+    .type = MINIMR_DNS_TYPE_AAAA,
+    .cache_class = MINIMR_DNS_CACHEFLUSH | MINIMR_DNS_CLASS_IN,
+    .ttl = 120,
+    .fun = mdns_rr_callback
+};
+struct minimr_dns_rr * mdns_records[MDNS_RR_COUNT];
+SocketAddress mdns_addr;
+
+UDPSocket mdns_sock;
 #endif
 
 /************ INLINE FUNCTIONS ************/
@@ -427,34 +454,62 @@ void midi_tx(uint8_t * buffer, size_t length)
 
 void netmidi_init()
 {
+    // force initialization of interface/mac etc (it's really ridiculous how they designed this)
+    eth.set_blocking(false);
+    wait_us(10); // just a little bit of waiting to avoid potential problem of non-blocking setting not yet taking effect
+    eth.connect();
+    eth.disconnect();
+    eth.set_blocking(true);
+    
+    // low-level: set MAC filter to pass multicast
+    STM32_EMAC &emac = STM32_EMAC::get_instance();
+    ETH_MACFilterConfigTypeDef pFilterConfig;
+    HAL_ETH_GetMACFilterConfig(&emac.EthHandle, &pFilterConfig);
+    pFilterConfig.PassAllMulticast = ENABLE;
+    HAL_ETH_SetMACFilterConfig(&emac.EthHandle, &pFilterConfig);
+
+
     const char * mac = eth.get_mac_address();
     printf("mac %s\n", mac ? mac : "none");
 
-    sprintf(net_hostname, NET_HOSTNAME_FMT, config.device_id);
-    printf("hostname %s\n", net_hostname);
+    sprintf((char*)RR_A.name, NET_HOSTNAME_FMT, config.device_id);
+    printf("hostname %s\n", (char*)&RR_A.name[1]);
 
-    sprintf(net_servicename, NET_SERVICENAME_FMT, config.device_id);
-    printf("servicename %s\n", net_servicename);
+    sprintf((char*)RR_AAAA.name, NET_SERVICENAME_FMT, config.device_id);
+    printf("servicename %s\n", (char*)&RR_AAAA.name[1]);
+
 
     eth.add_event_listener(eth_status_changed);
 
+    // Aggregat-02-245631f.local
 
-    if (udp_sock.open(&eth)){
-        printf("open error\n");
+    // mDNS initialization
+    minimr_dns_normalize_name(RR_A.name, &RR_A.name_length);
+    minimr_dns_normalize_name(RR_AAAA.name, &RR_AAAA.name_length);
+
+    memset(mdns_records, 0, sizeof(mdns_records));
+
+    if (mdns_sock.open(&eth)){
+        printf("mdns_sock: open error\n");
         return;
     }
-    printf("opened\n");
-
-    if (udp_sock.bind(7)){
-        printf("bind error\n");
+    if (mdns_sock.bind(5353)){
+        printf("mdns_sock: bind error\n");
         return;
     }
-    printf("bound to port\n");
+    mdns_sock.set_blocking(false);
 
-    udp_sock.set_blocking(false);
 
-    // eth_reconnect = true;
     
+    if (udp_sock.open(&eth)){
+        printf("udp_sock: open error\n");
+        return;
+    }
+    if (udp_sock.bind(7)){
+        printf("udp_sock: bind error\n");
+        return;
+    }
+    udp_sock.set_blocking(false);
 
     net_thread.start(eth_ifup);
 }
@@ -499,6 +554,7 @@ void eth_status_changed(nsapi_event_t evt, intptr_t intptr)
 
 bool eth_connect()
 {
+    
     // printf("eth.status = %d\n", eth.get_connection_status());
     if (eth.get_connection_status() != NSAPI_STATUS_DISCONNECTED){
         eth.disconnect();
@@ -514,10 +570,6 @@ bool eth_connect()
     do {
         res = eth.connect();
     } while( res != NSAPI_ERROR_OK && res != NSAPI_ERROR_DHCP_FAILURE );
-
-    // if (res == NSAPI_ERROR_NO_CONNECTION){
-    //     return false;
-    // }
 
     if (res == NSAPI_ERROR_OK) {
     
@@ -571,54 +623,165 @@ bool eth_connect()
     return true;
 }
 
+void mdns_configure()
+{
+
+    if (ip.get_ip_version() == NSAPI_IPv4){
+        memcpy(RR_A.ipv4, ip.get_ip_bytes(), sizeof(RR_A.ipv4));
+
+        mdns_records[0] = (struct minimr_dns_rr *)&RR_A;
+
+        mdns_addr.set_ip_address("224.0.0.251");
+        mdns_addr.set_port(5353);
+    } else {
+        memcpy(RR_AAAA.ipv6, ip.get_ip_bytes(), sizeof(RR_AAAA.ipv6));
+
+        mdns_records[0] = (struct minimr_dns_rr *)&RR_AAAA;
+
+        mdns_addr.set_ip_address("ff02::fb");
+        mdns_addr.set_port(5353);
+    }
+
+    if (mdns_sock.join_multicast_group(mdns_addr)){
+        printf("mdns_sock: failed to join multicast grp\n");
+        return;
+    }
+    
+}
+
+int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr, ...)
+{
+    if (type == minimr_dns_rr_fun_type_respond_to){
+        // always respond
+        return MINIMR_RESPOND;
+    }
+
+    // it isn't necessarily safe to put this here
+
+    va_list args;
+    va_start(args, rr);
+
+    uint8_t * outmsg = va_arg(args, uint8_t *);
+    uint16_t * outmsglen = va_arg(args, uint16_t *);
+    uint16_t outmsgmaxlen = va_arg(args, int); // uint16_t will be promoted to int
+    uint16_t * nrr = va_arg(args, uint16_t *);
+
+    va_end(args);
+
+
+    if (type == minimr_dns_rr_fun_type_get_rr){
+        if ((rr->type == MINIMR_DNS_TYPE_A && outmsgmaxlen < MINIMR_DNS_RR_A_SIZE(rr->name_length)) ||
+            (rr->type == MINIMR_DNS_TYPE_AAAA && outmsgmaxlen < MINIMR_DNS_RR_AAAA_SIZE(rr->name_length))) {
+            return MINIMR_NOT_OK;
+        }
+
+        uint16_t l = *outmsglen;
+
+        // helper macros to write all the standard fields of the record
+        // you can naturally do this manually and customize it ;)
+
+        MINIMR_DNS_RR_WRITE_COMMON(outmsg, l, rr->name, rr->name_length, rr->type, rr->cache_class, rr->ttl);
+
+        if (rr->type == MINIMR_DNS_TYPE_A) {
+            MINIMR_DNS_RR_WRITE_A_BODY(outmsg, l, ((minimr_dns_rr_a*)rr)->ipv4);
+        }
+        else if (rr->type == MINIMR_DNS_TYPE_AAAA) {
+            MINIMR_DNS_RR_WRITE_AAAA_BODY(outmsg, l, ((minimr_dns_rr_aaaa*)rr)->ipv6);
+        }
+        else {
+            return MINIMR_NOT_OK;
+        }
+
+        *outmsglen = l;
+        *nrr = 1;
+    }
+
+    return MINIMR_OK;
+}
+
+
 void eth_ifup()
 {
     printf("eth_ifup()\n");
 
     eth_reconnect = true;
 
+    uint8_t mdns_in[1024];
+    uint8_t mdns_out[1024];
+    uint16_t mdns_inlen = 0;
+    uint16_t mdns_outlen = 0;
+
+    int res = 0;
 
     while (1){
 
-        // if (exclusive_source == ExclusiveSourceNone){
-        //     ThisThread::sleep_for(1000);
-        //     continue;
-        // }
+        if (eth.get_connection_status() != NSAPI_STATUS_GLOBAL_UP){
 
-        // if (exclusive_source_mutex.trylock() == false){
-        //     continue;
-        // }
+            if (eth_reconnect == false){
+                wait_us(1000000);
+                continue;
+            }
 
-        if (eth_reconnect == false){
-            ThisThread::sleep_for(1000);
-            continue;
+            if (eth_connect() == false){
+                return;
+            }
+
+            eth_reconnect = false;
+
+            
+            mdns_configure();
+
+            // only announcing twice
+            res = minimr_announce(mdns_records, MDNS_RR_COUNT, mdns_out, &mdns_outlen, sizeof(mdns_out), NULL);
+
+            if (res != MINIMR_OK){
+                printf("minimr_announce: failed %d\n", res);
+                continue;
+            }
+
+            if (mdns_outlen > 0){
+                // mdns_sock.set_blocking(false);
+                mdns_sock.sendto(mdns_addr, mdns_out, mdns_outlen);
+                wait_us(1000000);
+                mdns_sock.sendto(mdns_addr, mdns_out, mdns_outlen);
+                mdns_sock.set_blocking(false);
+            }
         }
 
-
-        if (eth_connect() == false){
-            // exclusive_source_mutex.unlock();
-            return;
-        }
         
-        // exclusive_source = ExclusiveSourceNet;
-        // exclusive_source_mutex.unlock();
+        // check if there is an mdns message and react to it
+        SocketAddress addr;
+        nsapi_size_or_error_t sockres = mdns_sock.recvfrom(&addr, mdns_in, sizeof(mdns_in));
 
-        eth_reconnect = false;
+        if (sockres > 0){
+            // printf("mdns rx %d %s\n", res, addr.get_ip_address());
 
-        // SocketAddress addr;
+            struct minimr_dns_query_stat qstats[MDNS_RR_COUNT];
+            
+            uint8_t unicast_requested = 0;
 
-        // uint8_t hello[] = "hello!";
+            res = minimr_handle_queries(mdns_in, res, qstats, MDNS_RR_COUNT, mdns_records, MDNS_RR_COUNT, mdns_out, &mdns_outlen, sizeof(mdns_out), &unicast_requested);
 
-        // addr.set_ip_address("169.254.108.82");
-        // addr.set_port(6666);
+            if (res != MINIMR_OK){
+                // printf("minimr_handle: failed %d\n", res);
+                continue;
+            } else {
+                printf("mdns responding\n");
+            }
 
-        // int r = udp_sock.sendto(addr, hello, sizeof(hello));
-        // if (r < 0){
-        //     printf("tx err %d\n", r);
-        //     continue;
-        // } else {
-        //     printf("sent hello\n");
-        // }
+            if (mdns_outlen > 0){
+                if (unicast_requested){
+                    mdns_sock.sendto(addr, mdns_out, mdns_outlen);
+                } else {
+                    mdns_sock.sendto(mdns_addr, mdns_out, mdns_outlen);
+                }
+            }
+
+        } else if (sockres < 0) {
+            if (sockres != NSAPI_ERROR_WOULD_BLOCK){
+                printf("mdns_sock.recv err %d\n", sockres);
+            }
+        } // mdns responder
     }
 
 }
@@ -631,21 +794,22 @@ void netmidi_run()
         return;
     }
 
-    SocketAddress addr;
-
-    addr.set_ip_address("169.254.108.82");
-    addr.set_port(6666);
 
     uint8_t data[256];
+    SocketAddress addr;
 
-    nsapi_size_or_error_t res = udp_sock.recv(data, sizeof(data));
+    nsapi_size_or_error_t res = udp_sock.recvfrom(&addr, data, sizeof(data));
 
     if (res > 0){
         data[res] = '\0';
-        printf("udp rx (%d) %s", res, data);
+        printf("udp rx (%d) from %s: %s\n", res, addr.get_ip_address(), data);
         
         // echo back
         udp_sock.sendto(addr, data, res);
+    } else if (res < 0) {
+        if (res != NSAPI_ERROR_WOULD_BLOCK){
+            printf("rx err %d\n", res);
+        }
     }
 }
 
@@ -663,7 +827,7 @@ int main()
     // midi_tx((uint8_t*)"RESTART\n",8);
 
     load_config();
-    
+
     // initialize motors
     motors_init();
 
@@ -675,50 +839,12 @@ int main()
     midi_init();
     netmidi_init();
 
-    // start up handlers
-    // midi_start();
-
     motors_resume();
-
-    // Thread thr;
-
-    // thr.start([](){
-
-    //     while(1){
-    //         printf("midi_tx\n");
-
-    //         static uint8_t controller = 1;
-    //         static uint8_t value = 127;
-
-    //         value = (value + 1) % 128;
-
-    //         uint8_t cc[3] = {0xB1, controller, value};
-
-    //         usbmidi_tx(cc, 3);
-
-    //         wait_us(1000000);
-    //     }
-
-    // });
 
     while (true) {
         usbmidi_run();
         midi_run();
         netmidi_run();
-
-
-// if (usbmidi.ready()){
-//             static uint8_t controller = 1;
-//             static uint8_t value = 127;
-
-//             value = (value + 1) % 128;
-
-//             uint8_t cc[3] = {0xB1, controller, value};
-
-//             usbmidi_tx(cc, 3);
-
-//             wait_us(1000000);
-// }
     }
 }
 

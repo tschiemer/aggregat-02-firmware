@@ -71,9 +71,11 @@
 #define NETMIDI_FORWARD_TO_MIDI true
 #define NETMIDI_FORWARD_TO_USB  false
 
-#define NET_HOSTNAME_FMT "Aggregat-02-%08x"
-#define NET_SERVICENAME_FMT "Aggregat 02 (%08x)"
+#define NET_HOSTNAME_FMT ".Aggregat-02-%08x.local"
+#define NET_SERVICENAME_FMT ".Aggregat 02 (%08x)"
 
+// required records: A or AAAA
+#define MDNS_RR_COUNT 1
 
 // #define NET_HOSTNAME_MAXLEN 32
 
