@@ -287,6 +287,9 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
     if (msg.type() == MIDIMessage::ControlChangeType){
 
+        // TO BE DEFINED
+
+        // example
         if (msg.channel() == channel_offset){
             int32_t motori = msg.controller() - controller_offset;
 
@@ -338,6 +341,11 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     }
 }
 
+void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
+{
+    // TO BE DEFINED
+}
+
 
 #if USE_USBMIDI == 1
 
@@ -350,7 +358,19 @@ void usbmidi_init()
 
     static uint8_t buffer[128];
 
-    MidiMessage::simpleparser_init(&usbmidi_parser, true, (uint8_t*)&buffer, sizeof(buffer), usbmidi_rx, NULL, NULL);
+    MidiMessage::simpleparser_init(
+        &usbmidi_parser,
+        true, // enable running status
+        (uint8_t*)&buffer, sizeof(buffer),
+        [](uint8_t * buffer, uint16_t length, void * context){
+            controller_handle_msg(buffer, length, SourceUsb);
+        },
+        [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
+            controller_handle_nrpn(channel, type, action, controller, value, SourceUsb);
+        },
+        NULL,
+        NULL
+    );
 }
 
 void usbmidi_run()
@@ -391,11 +411,6 @@ void usbmidi_run()
     }
 }
 
-void usbmidi_rx(uint8_t * buffer, uint8_t length, void * context) // parser callback handler
-{
-    controller_handle_msg(buffer, length, SourceUsb);
-}
-
 void usbmidi_tx(uint8_t * buffer, size_t length)
 {
     if (usbmidi.ready() == false){
@@ -423,7 +438,19 @@ void midi_init()
 
     static uint8_t buffer[128];
 
-    MidiMessage::simpleparser_init(&midi_parser, true, (uint8_t*)&buffer, sizeof(buffer), midi_rx, NULL, NULL);
+    MidiMessage::simpleparser_init(
+        &midi_parser,
+        true, // enable running status
+        (uint8_t*)&buffer, sizeof(buffer),
+        [](uint8_t * buffer, uint16_t length, void * context){
+            controller_handle_msg(buffer, length, SourceMidi);
+        },
+        [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
+            controller_handle_nrpn(channel, type, action, controller, value, SourceMidi);
+        },
+        NULL,
+        NULL
+    );
 }
 
 void midi_run()
@@ -442,11 +469,6 @@ void midi_run()
             MidiMessage::simpleparser_receivedData(&midi_parser, buffer, (uint8_t)rlen);
         }
     }
-}
-
-void midi_rx(uint8_t * buffer, uint8_t length, void * context)
-{
-    controller_handle_msg(buffer, length, SourceMidi);
 }
 
 void midi_tx(uint8_t * buffer, size_t length)
