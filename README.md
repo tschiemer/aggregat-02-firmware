@@ -11,19 +11,36 @@ https://aggregat.zhdk.ch/
 - [x] Ethernet-based networking
   - [x] DHCP or link-local addressing
   - [ ] [mDNS / DNS-SD](https://github.com/tschiemer/minimr) based host/service discovery
-     - [x] using hardware id as part of hostname
-     - [ ] dynamic, simple hostname
+     - [x] ~~using hardware id as part of hostname~~
+     - [ ] ~~dynamic, simple hostname~~
+     - [ ] *Proposed* Use Channel (or specific) setting as part of hostname, ex ch4.aggregat.local or 1.aggregat.local
      - [ ] service???
   - [ ] Control interface TBD
-    1. Raw UDP (quasi simple)
-    2. *Proposed* [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
-    3. RTPMIDI (complex, resuable components??)
+    1. *Proposed* Raw UDP (quasi simple) port (?): 1234 (?)
+    2. [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
+    3. *Postpone (when components are made by pt)* RTPMIDI (complex)
 - [ ] **Control Logic** TBD
   - [ ] Configuration using DIP Switch (controller/channel offset) TBD
 - [ ] **Motor Control**
 - [ ] **Calibration** necessary? how?
 - [ ] Hardware: Modules, custom PCB-hat?, case/protection
-- Nice to Haves:
+
+
+### Hardware Controls
+
+Possible configuration settings (for evaluation), settable using dip-switch:
+
+Name | Pins | Description | Use?
+--- | --- | --- | ---
+UsbLed | 1 | Is USBMIDI connected? Blink on activity? |
+EthLed | 1 | Is Ethernet connected? Blink on activity? |
+Channel | 4 | Which MIDI Channel to use (1-16) |
+Controller Group | 1 | Which Controller group (1-2?) is used? |
+Forward X to Y | 6 | Enable forwarding of messages from USB/MIDI/NET to USB/MIDI/NET |
+HostId | 2-4 | Which ID is used as part of hostname? |
+
+
+
 
 ## Installation / Flashing
 
