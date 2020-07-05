@@ -36,10 +36,8 @@ UsbLed | 1 | Is USBMIDI connected? Blink on activity? |
 EthLed | 1 | Is Ethernet connected? Blink on activity? |
 Channel | 4 | Which MIDI Channel to use (1-16) |
 Controller Group | 1 | Which Controller group (1-2?) is used? |
-Forward X to Y | 6 | Enable forwarding of messages from USB/MIDI/NET to USB/MIDI/NET |
 HostId | 2-4 | Which ID is used as part of hostname? |
-
-
+Forward X to Y | 9 | Enable forwarding of messages from USB/MIDI/NET to USB/MIDI/NET (incl. echo) |
 
 
 ## Installation / Flashing
