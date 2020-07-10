@@ -23,6 +23,7 @@
 
 #include "midimessage/midimessage.h"
 #include "midimessage/simpleparser.h"
+#include "midimessage/packers.h"
 
 
 /************ TYPES ************/
@@ -322,7 +323,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     if (msg.type() == MIDIMessage::ControlChangeType){
 
         // TO BE DEFINED
-        printf("channel %d\n",get_channel());
+        // printf("channel %d\n",get_channel());
 
         // example
         if (msg.channel() == get_channel()){
@@ -338,15 +339,15 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     }
 
     // each channel controls a motor starting from channel_offset
-    // if (msg.type() == MIDIMessage::PitchWheelType){
-    //     int32_t motori = msg.channel() - get_channel();
+    if (msg.type() == MIDIMessage::PitchWheelType){
+        int32_t motori = msg.channel();
         
-    //     if (0 <= motori && motori < MOTOR_COUNT){
-    //         float pos = s14_to_pos(msg.pitch());
-    //         motors[motori] = pos;
-    //     }
+        if (0 <= motori && motori < MOTOR_COUNT){
+            float pos = s14_to_pos(msg.pitch());
+            motors[motori] = pos;
+        }
         
-    // }
+    }
 
     #endif //ENABLE_CONTROLLER_LOGIC == 1
 
@@ -384,7 +385,75 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
 void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
 {
-    // TO BE DEFINED
+    
+    #if ENABLE_CONTROLLER_LOGIC == 1
+    if (type == MidiMessage::NRpnTypeNRPN && channel == get_channel() && action == MidiMessage::NRpnActionValue){
+        int32_t motori = controller - CONTROLLER_OFFSET;
+        // printf("controller %d\n", motori);
+
+        if (0 <= motori && motori < MOTOR_COUNT){
+            float pos = u14_to_pos(value);
+            // printf("motor[%d] = %d\n", motori, (int)(pos*100));
+            motors[motori] = pos;
+        }
+    }
+    #endif //ENABLE_CONTROLLER_LOGIC == 1
+
+    uint8_t buffer[12];
+    uint8_t length = 0;
+
+    if (type == MidiMessage::NRpnTypeNRPN){
+        if (action == MidiMessage::NRpnActionValue){
+            length = MidiMessage::packNrpnValue(buffer, channel, controller, value, false);
+        } else if (action == MidiMessage::NRpnActionIncrement){
+            length = MidiMessage::packNrpnIncrement(buffer, channel, controller, value, false);
+        } else if (action == MidiMessage::NRpnActionDecrement){
+            length = MidiMessage::packNrpnDecrement(buffer, channel, controller, value, false);
+        }
+    } else { // RPN
+        if (action == MidiMessage::NRpnActionValue){
+            length = MidiMessage::packRpnValue(buffer, channel, controller, value, false);
+        } else if (action == MidiMessage::NRpnActionIncrement){
+            length = MidiMessage::packRpnIncrement(buffer, channel, controller, value, false);
+        } else if (action == MidiMessage::NRpnActionDecrement){
+            length = MidiMessage::packRpnDecrement(buffer, channel, controller, value, false);
+        }
+    }
+    
+    if (length == 0){
+        return;
+    }
+
+    #if USE_USBMIDI
+    if (source == SourceUsb){
+        if (usb_to_midi){
+            midi_tx(buffer, length);
+        }
+        if (usb_to_net){
+            netmidi_tx(buffer, length);
+        }
+    }
+    #endif
+    #if USE_MIDI
+    if (source == SourceMidi){
+        if (midi_to_usb){
+            usbmidi_tx(buffer, length);
+        }
+        if (midi_to_net){
+            netmidi_tx(buffer, length);
+        }
+    }
+    #endif
+    #if USE_NETMIDI
+    if (source == SourceNet){
+        if (net_to_usb){
+            usbmidi_tx(buffer, length);
+        }
+        if (net_to_midi){
+            netmidi_tx(buffer, length);
+        }
+    }
+    #endif
 }
 
 

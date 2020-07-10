@@ -47,7 +47,7 @@
 
 
 #define USB_POWER_PIN PA_9
-#define USB_CONNECTED_LED LED1
+#define USB_CONNECTED_LED A3 //LED1
 
 // default value
 #define USBMIDI_FORWARD_TO_MIDI true
