@@ -4,6 +4,13 @@
 
 // default value 
 #define CHANNEL_OFFSET      0
+
+#define USE_CHANNEL_SELECT  1
+#define CHANNEL_SELECT_1_PIN    PC_11
+#define CHANNEL_SELECT_2_PIN    PC_10
+#define CHANNEL_SELECT_3_PIN    PC_9
+#define CHANNEL_SELECT_4_PIN    PC_8
+
 #define CONTROLLER_OFFSET   102
 
 #define ENABLE_SYSTEM_RESET 1

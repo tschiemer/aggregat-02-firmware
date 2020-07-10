@@ -41,13 +41,14 @@ typedef struct {
     ConfigState config_state;
     uint32_t device_id;
     // volatile uint8_t channel_offset;
-    // volatile uint8_t controller_offset;
 } __attribute__((packed)) Config;
 
 /************ SIGNATURES ************/
 
 void load_config();
 void save_config();
+
+void gpio_init();
 
 void motors_init();
 void motors_suspend();
@@ -132,8 +133,12 @@ AggregatMotor motors[MOTOR_COUNT] = {
   #endif
 };
 
-volatile int32_t channel_offset = CHANNEL_OFFSET;
-volatile int32_t controller_offset = CONTROLLER_OFFSET;
+#if USE_CHANNEL_SELECT 
+BusIn channel_select_bus(CHANNEL_SELECT_1_PIN, CHANNEL_SELECT_2_PIN, CHANNEL_SELECT_3_PIN, CHANNEL_SELECT_4_PIN);
+#define get_channel() channel_select_bus.read()
+#else
+#define get_channel() CHANNEL_OFFSET
+#endif
 
 
 #if USE_USBMIDI == 1
@@ -227,12 +232,18 @@ void load_config()
     srand(uidxor + time(NULL));
 
     // config.channel_offset = CHANNEL_OFFSET;
-    // config.controller_offset = CONTROLLER_OFFSET;
 }
 
 void save_config()
 {
 
+}
+
+void gpio_init()
+{
+    #if USE_CHANNEL_SELECT
+    channel_select_bus.mode(PullUp);
+    #endif
 }
 
 void motors_init()
@@ -311,10 +322,11 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     if (msg.type() == MIDIMessage::ControlChangeType){
 
         // TO BE DEFINED
+        printf("channel %d\n",get_channel());
 
         // example
-        if (msg.channel() == channel_offset){
-            int32_t motori = msg.controller() - controller_offset;
+        if (msg.channel() == get_channel()){
+            int32_t motori = msg.controller() - CONTROLLER_OFFSET;
             // printf("controller %d\n", motori);
 
             if (0 <= motori && motori < MOTOR_COUNT){
@@ -327,7 +339,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
     // each channel controls a motor starting from channel_offset
     // if (msg.type() == MIDIMessage::PitchWheelType){
-    //     int32_t motori = msg.channel() - channel_offset;
+    //     int32_t motori = msg.channel() - get_channel();
         
     //     if (0 <= motori && motori < MOTOR_COUNT){
     //         float pos = s14_to_pos(msg.pitch());
@@ -889,6 +901,9 @@ int main()
     // midi_tx((uint8_t*)"RESTART\n",8);
 
     load_config();
+
+    // initialize gpios
+    gpio_init();
 
     // initialize motors
     motors_init();
