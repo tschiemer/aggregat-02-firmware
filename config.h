@@ -4,7 +4,7 @@
 
 // default value 
 #define CHANNEL_OFFSET      0
-#define CONTROLLER_OFFSET   0
+#define CONTROLLER_OFFSET   102
 
 #define ENABLE_SYSTEM_RESET 1
 
@@ -14,20 +14,24 @@
 
 // #define MOTOR_REFRESH_RATE_HZ       60
 
-// #define MOTOR_PULSEWIDTH_MIN_USEC   556
-// #define MOTOR_PULSEWIDTH_MAX_USEC   2410
+#define MOTOR_PULSEWIDTH_MIN_USEC   760
+#define MOTOR_PULSEWIDTH_MAX_USEC   2240
 
 #define MOTOR_REFRESH_RATE_HZ 50
 
-#define MOTOR_PULSEWIDTH_MIN_USEC   0
-#define MOTOR_PULSEWIDTH_MAX_USEC   20000000
+// #define MOTOR_PULSEWIDTH_MIN_USEC   0
+// #define MOTOR_PULSEWIDTH_MAX_USEC   20000000
 
-#define MOTOR_COUNT         1
+#define MOTOR_COUNT         8
 
-#define MOTOR_1_PIN         PWM_OUT // PA_15
-#define MOTOR_2_PIN         LED2
-#define MOTOR_3_PIN         LED3
-#define MOTOR_4_PIN         LED4
+#define MOTOR_1_PIN         D11
+#define MOTOR_2_PIN         D10
+#define MOTOR_3_PIN         D9
+#define MOTOR_4_PIN         D6
+#define MOTOR_5_PIN         D5
+#define MOTOR_6_PIN         D3
+#define MOTOR_7_PIN         PB_10
+#define MOTOR_8_PIN         PB_11
 
 
 /************ USBMIDI ************/
@@ -44,7 +48,7 @@
 
 /************ MIDI ************/
 
-#define USE_MIDI 1
+#define USE_MIDI 0
 
 #define MIDI_TX_PIN PD_5
 #define MIDI_RX_PIN PD_6

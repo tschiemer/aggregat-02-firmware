@@ -106,7 +106,30 @@ Config config = {
 
 volatile bool motors_running = false;
 AggregatMotor motors[MOTOR_COUNT] = {
-  AggregatMotor(MOTOR_1_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC)
+    #if MOTOR_COUNT > 0
+  AggregatMotor(MOTOR_1_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 1
+  AggregatMotor(MOTOR_2_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 2
+  AggregatMotor(MOTOR_3_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 3
+  AggregatMotor(MOTOR_4_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 4
+  AggregatMotor(MOTOR_5_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 5
+  AggregatMotor(MOTOR_6_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 6
+  AggregatMotor(MOTOR_7_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 7
+  AggregatMotor(MOTOR_8_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC)
+  #endif
 };
 
 volatile int32_t channel_offset = CHANNEL_OFFSET;
@@ -248,11 +271,11 @@ void controller_init()
 
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 {
-    printf("CMD (len %d) ", length);
-    for(int i = 0; i < length; i++){
-        printf("%02x", buffer[i]);
-    }
-    printf("\n");
+    // printf("CMD (len %d) ", length);
+    // for(int i = 0; i < length; i++){
+    //     printf("%02x", buffer[i]);
+    // }
+    // printf("\n");
 
 
     #if ENABLE_CONTROLLER_LOGIC == 1
@@ -292,28 +315,30 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         // example
         if (msg.channel() == channel_offset){
             int32_t motori = msg.controller() - controller_offset;
+            // printf("controller %d\n", motori);
 
             if (0 <= motori && motori < MOTOR_COUNT){
                 float pos = u7_to_pos(msg.value());
-                printf("motor[%d] = %d\n", motori, (int)(pos*100));
+                // printf("motor[%d] = %d\n", motori, (int)(pos*100));
                 motors[motori] = pos;
             }
         }
     }
 
     // each channel controls a motor starting from channel_offset
-    if (msg.type() == MIDIMessage::PitchWheelType){
-        int32_t motori = msg.channel() - channel_offset;
+    // if (msg.type() == MIDIMessage::PitchWheelType){
+    //     int32_t motori = msg.channel() - channel_offset;
         
-        if (0 <= motori && motori < MOTOR_COUNT){
-            float pos = s14_to_pos(msg.pitch());
-            motors[motori] = pos;
-        }
+    //     if (0 <= motori && motori < MOTOR_COUNT){
+    //         float pos = s14_to_pos(msg.pitch());
+    //         motors[motori] = pos;
+    //     }
         
-    }
+    // }
 
     #endif //ENABLE_CONTROLLER_LOGIC == 1
 
+    #if USE_USBMIDI
     if (source == SourceUsb){
         if (usb_to_midi){
             midi_tx(buffer, length);
@@ -322,6 +347,8 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
             netmidi_tx(buffer, length);
         }
     }
+    #endif
+    #if USE_MIDI
     if (source == SourceMidi){
         if (midi_to_usb){
             usbmidi_tx(buffer, length);
@@ -330,7 +357,8 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
             netmidi_tx(buffer, length);
         }
     }
-
+    #endif
+    #if USE_NETMIDI
     if (source == SourceNet){
         if (net_to_usb){
             usbmidi_tx(buffer, length);
@@ -339,6 +367,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
             netmidi_tx(buffer, length);
         }
     }
+    #endif
 }
 
 void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
@@ -394,7 +423,7 @@ void usbmidi_run()
 
     
     if (usbmidi.readable()){
-        printf("ubsmidi.readable() = %d\n", usbmidi.readable());    
+        // printf("ubsmidi.readable() = %d\n", usbmidi.readable());    
         // mark activity
         // usbmidi_led = 0;
 

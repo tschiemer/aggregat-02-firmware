@@ -35,10 +35,24 @@ Name | Pins | Description | Use?
 UsbLed | 1 | Is USBMIDI connected? Blink on activity? |
 EthLed | 1 | Is Ethernet connected? Blink on activity? |
 Channel | 4 | Which MIDI Channel to use (1-16) |
-Controller Group | 1 | Which Controller group (1-2?) is used? |
 HostId | 2-4 | Which ID is used as part of hostname? |
 Forward X to Y | 9 | Enable forwarding of messages from USB/MIDI/NET to USB/MIDI/NET (incl. echo) |
 
+
+## Pinout
+
+Pin | Description
+--- | ---
+D11 (PB5) | Motor 1
+D10 (PD14)| Motor 2
+D9 (PD15) | Motor 3
+D6 (PE9)  | Motor 4
+D5 (PE9)  | Motor 5
+D3 (PE13) | Motor 6
+D36 (PB10)| Motor 7
+D35 (PB11)| Motor 8
+D33 (PB0) | Reserve
+D32 (PA0) | Reserve
 
 ## Installation / Flashing
 

@@ -42,16 +42,23 @@ void AggregatMotor::set(float pos)
 {
     // Guard
     if (pos < 0.0) {
-        printf("pos out of range: %f\n", pos);
+        printf("pos out of range: %d\n", (int)(100*pos));
         pos = 0.0;
     } else if (pos > 1.0) {
-        printf("pos out of range: %f\n", pos);
+        printf("pos out of range: %d\n", (int)(100*pos));
         pos = 1.0;
     }
 
-    m_pulsewidth_usec_current = pos * (m_pulsewidth_usec_max - m_pulsewidth_usec_min) + m_pulsewidth_usec_min;
+    int newval = pos * (m_pulsewidth_usec_max - m_pulsewidth_usec_min) + m_pulsewidth_usec_min;
 
-    // printf("pw %d", pw);
+    // don't update if previous value was identical
+    if (newval == m_pulsewidth_usec_current){
+        return;
+    }
+
+    m_pulsewidth_usec_current = newval;
+
+    // printf("usec_pos %d\n", m_pulsewidth_usec_current);
 
     m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
 }
@@ -69,6 +76,7 @@ void AggregatMotor::suspend()
 void AggregatMotor::resume()
 {
     m_pwm.resume();
+    m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
 }
 
 // void AggregatMotor::run()

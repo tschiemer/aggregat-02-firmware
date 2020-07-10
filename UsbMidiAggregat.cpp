@@ -24,9 +24,9 @@ bool UsbMidiAggregat::just_reconnected()
 
     bool flag = vbus_flag;
     vbus_flag = false;
-    if (flag){
-        printf("vbus 1 configured %d\n", configured());
-    }
+    // if (flag){
+    //     printf("vbus 1 configured %d\n", configured());
+    // }
     return flag;
 }
 
