@@ -34,20 +34,9 @@ typedef enum {
     SourceNet
 } Source;
 
-typedef enum {
-    ConfigStateValid = 0x1337BEEF
-} ConfigState;
-
-typedef struct {
-    ConfigState config_state;
-    uint32_t device_id;
-    // volatile uint8_t channel_offset;
-} __attribute__((packed)) Config;
-
 /************ SIGNATURES ************/
 
-void load_config();
-void save_config();
+void core_init();
 
 void gpio_init();
 
@@ -55,7 +44,7 @@ void motors_init();
 void motors_suspend();
 void motors_resume();
 
-void controller_init();
+// void controller_init();
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source);
 
 #if USE_USBMIDI == 1
@@ -91,7 +80,8 @@ void netmidi_tx(uint8_t * buffer, size_t length);
 void eth_status_changed(nsapi_event_t evt, intptr_t intptr);
 void eth_ifup();
 
-void mdns_configure();
+void mdns_init();
+void mdns_deinit();
 int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr, ...);
 #else //USE_NETMIDI == 0
 #define netmidi_init()
@@ -101,10 +91,7 @@ int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr
 
 /************ LOCAL VARIABLES ************/
 
-// will be overwritten immediately by load_config()
-Config config = {
-    .device_id = 0, 
-};
+uint32_t hw_device_id = 0;
 
 volatile bool motors_running = false;
 AggregatMotor motors[MOTOR_COUNT] = {
@@ -135,31 +122,53 @@ AggregatMotor motors[MOTOR_COUNT] = {
 };
 
 #if USE_CHANNEL_SELECT 
-BusIn channel_select_bus(CHANNEL_SELECT_1_PIN, CHANNEL_SELECT_2_PIN, CHANNEL_SELECT_3_PIN, CHANNEL_SELECT_4_PIN);
+BusIn channel_select_bus(CHANNEL_SELECT_PIN_1, CHANNEL_SELECT_PIN_2, CHANNEL_SELECT_PIN_3, CHANNEL_SELECT_PIN_4);
 #define get_channel() channel_select_bus.read()
 #else
 #define get_channel() CHANNEL_OFFSET
-#endif
+#endif //USE_CHANNEL_SELECT
+
+#if USE_DEVICE_ID_SELECT
+BusIn device_id_bus(DEVICE_ID_SELECT_PIN_1, DEVICE_ID_SELECT_PIN_2, DEVICE_ID_SELECT_PIN_3, DEVICE_ID_SELECT_PIN_4);
+#define get_device_id()     device_id_bus.read()
+#else
+#define get_device_id()     DEVICE_ID_SELECT_DEFAULT
+#endif //USE_ID_SELECT
 
 
 #if USE_USBMIDI == 1
-DigitalOut usbmidi_led(USB_CONNECTED_LED);
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
-bool usb_to_midi = USBMIDI_FORWARD_TO_MIDI;
-bool usb_to_net = USBMIDI_FORWARD_TO_NET;
-
 MidiMessage::SimpleParser_t usbmidi_parser;
+
+DigitalOut usbmidi_led(USB_CONNECTED_LED);
+
+#if USE_FORWARDING_CONTROLS
+DigitalIn usb_to_midi_pin(USB_TO_MIDI_PIN, PullUp);
+DigitalIn usb_to_net_pin(USB_TO_NET_PIN, PullUp);
+#define usb_to_midi()   usb_to_midi_pin.read()
+#define usb_to_net()    usb_to_net_pin.read()
+#else
+#define usb_to_midi()   USB_TO_MIDI_DEFAULT    
+#define usb_to_net()    USB_TO_NET_DEFAULT
+#endif // USE_FORWARDING_CONTROLS
 #endif
 
 #if USE_MIDI == 1
 BufferedSerial midi(MIDI_TX_PIN, MIDI_RX_PIN);
-bool midi_to_usb = MIDI_FORWARD_TO_USB;
-bool midi_to_net = MIDI_FORWARD_TO_NET;
 
 MidiMessage::SimpleParser_t midi_parser;
-// volatile State midi_state = StateStopped;
-// Thread midi_thread;
-#endif
+
+#if USE_FORWARDING_CONTROLS
+DigitalIn midi_to_usb_pin(MIDI_TO_USB_PIN, PullUp);
+DigitalIn midi_to_net_pin(MIDI_TO_NET_PIN, PullUp);
+#define midi_to_usb()   midi_to_usb_pin.read()
+#define midi_to_net()   midi_to_net_pin.read()
+#else
+#define midi_to_usb()   MIDI_TO_USB_DEFAULT
+#define midi_to_net()   MIDI_TO_NET_DEFAULT
+#endif // USE_FORWARDING_CONTROLS
+
+#endif //USE_USBMIDI
 
 #if USE_NETMIDI == 1
 EthernetInterface eth;
@@ -171,11 +180,15 @@ bool eth_reconnect = false;
 
 DigitalOut net_led(NET_STATUS_LED);
 
-bool net_to_midi = NETMIDI_FORWARD_TO_MIDI;
-bool net_to_usb = NETMIDI_FORWARD_TO_USB;
-
-char net_hostname[64] = "";
-char net_servicename[64] = "";
+#if USE_FORWARDING_CONTROLS
+DigitalIn net_to_usb_pin(NET_TO_USB_PIN, PullUp);
+DigitalIn net_to_midi_pin(NET_TO_MIDI_PIN, PullUp);
+#define net_to_usb()    net_to_usb_pin.read()
+#define net_to_midi()   net_to_midi_pin.read()
+#else
+#define net_to_usb()    NET_TO_USB_DEFAULT
+#define net_to_midi()   NET_TO_MIDI_DEFAULT
+#endif // USE_FORWARDING_CONTROLS
 
 minimr_dns_rr_a RR_A = {
     .type = MINIMR_DNS_TYPE_A,
@@ -223,16 +236,11 @@ void do_nothing(){}
 
 
 
-void load_config()
+void core_init()
 {
-    uint32_t uidxor = LL_GetUID_Word0() ^ LL_GetUID_Word1() ^ LL_GetUID_Word2();
+    hw_device_id = LL_GetUID_Word0() ^ LL_GetUID_Word1() ^ LL_GetUID_Word2();
 
-    config.device_id = uidxor;
-
-
-    srand(uidxor + time(NULL));
-
-    // config.channel_offset = CHANNEL_OFFSET;
+    srand(hw_device_id + time(NULL));
 }
 
 void save_config()
@@ -244,6 +252,10 @@ void gpio_init()
 {
     #if USE_CHANNEL_SELECT
     channel_select_bus.mode(PullUp);
+    #endif
+
+    #if USE_DEVICE_ID_SELECT
+    device_id_bus.mode(PullUp);
     #endif
 }
 
@@ -327,7 +339,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
         // example
         if (msg.channel() == get_channel()){
-            int32_t motori = msg.controller() - CONTROLLER_OFFSET;
+            int32_t motori = msg.controller() - CC_CONTROLLER_OFFSET;
             // printf("controller %d\n", motori);
 
             if (0 <= motori && motori < MOTOR_COUNT){
@@ -338,6 +350,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         }
     }
 
+    #if ENABLE_PITCHBEND_CONTROL
     // each channel controls a motor starting from channel_offset
     if (msg.type() == MIDIMessage::PitchWheelType){
         int32_t motori = msg.channel();
@@ -348,47 +361,48 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         }
         
     }
+    #endif //ENABLE_PITCHBEND_CONTROL
 
     #endif //ENABLE_CONTROLLER_LOGIC == 1
 
     #if USE_USBMIDI
     if (source == SourceUsb){
-        if (usb_to_midi){
+        if (usb_to_midi()){
             midi_tx(buffer, length);
         }
-        if (usb_to_net){
+        if (usb_to_net()){
             netmidi_tx(buffer, length);
         }
     }
     #endif
     #if USE_MIDI
     if (source == SourceMidi){
-        if (midi_to_usb){
+        if (midi_to_usb()){
             usbmidi_tx(buffer, length);
         }
-        if (midi_to_net){
+        if (midi_to_net()){
             netmidi_tx(buffer, length);
         }
     }
     #endif
     #if USE_NETMIDI
     if (source == SourceNet){
-        if (net_to_usb){
+        if (net_to_usb()){
             usbmidi_tx(buffer, length);
         }
-        if (net_to_midi){
+        if (net_to_midi()){
             netmidi_tx(buffer, length);
         }
     }
     #endif
 }
 
+#if ENABLE_NRPN_CONTROL
 void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
 {
-    
     #if ENABLE_CONTROLLER_LOGIC == 1
     if (type == MidiMessage::NRpnTypeNRPN && channel == get_channel() && action == MidiMessage::NRpnActionValue){
-        int32_t motori = controller - CONTROLLER_OFFSET;
+        int32_t motori = controller - CC_CONTROLLER_OFFSET;
         // printf("controller %d\n", motori);
 
         if (0 <= motori && motori < MOTOR_COUNT){
@@ -398,63 +412,8 @@ void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiM
         }
     }
     #endif //ENABLE_CONTROLLER_LOGIC == 1
-
-    uint8_t buffer[12];
-    uint8_t length = 0;
-
-    if (type == MidiMessage::NRpnTypeNRPN){
-        if (action == MidiMessage::NRpnActionValue){
-            length = MidiMessage::packNrpnValue(buffer, channel, controller, value, false);
-        } else if (action == MidiMessage::NRpnActionIncrement){
-            length = MidiMessage::packNrpnIncrement(buffer, channel, controller, value, false);
-        } else if (action == MidiMessage::NRpnActionDecrement){
-            length = MidiMessage::packNrpnDecrement(buffer, channel, controller, value, false);
-        }
-    } else { // RPN
-        if (action == MidiMessage::NRpnActionValue){
-            length = MidiMessage::packRpnValue(buffer, channel, controller, value, false);
-        } else if (action == MidiMessage::NRpnActionIncrement){
-            length = MidiMessage::packRpnIncrement(buffer, channel, controller, value, false);
-        } else if (action == MidiMessage::NRpnActionDecrement){
-            length = MidiMessage::packRpnDecrement(buffer, channel, controller, value, false);
-        }
-    }
-    
-    if (length == 0){
-        return;
-    }
-
-    #if USE_USBMIDI
-    if (source == SourceUsb){
-        if (usb_to_midi){
-            midi_tx(buffer, length);
-        }
-        if (usb_to_net){
-            netmidi_tx(buffer, length);
-        }
-    }
-    #endif
-    #if USE_MIDI
-    if (source == SourceMidi){
-        if (midi_to_usb){
-            usbmidi_tx(buffer, length);
-        }
-        if (midi_to_net){
-            netmidi_tx(buffer, length);
-        }
-    }
-    #endif
-    #if USE_NETMIDI
-    if (source == SourceNet){
-        if (net_to_usb){
-            usbmidi_tx(buffer, length);
-        }
-        if (net_to_midi){
-            netmidi_tx(buffer, length);
-        }
-    }
-    #endif
 }
+#endif //ENABLE_NRPN_CONTROL
 
 
 #if USE_USBMIDI == 1
@@ -475,9 +434,13 @@ void usbmidi_init()
         [](uint8_t * buffer, uint16_t length, void * context){
             controller_handle_msg(buffer, length, SourceUsb);
         },
+        #if ENABLE_NRPN_CONTROL
         [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
             controller_handle_nrpn(channel, type, action, controller, value, SourceUsb);
         },
+        #else
+        NULL,
+        #endif
         NULL,
         NULL
     );
@@ -555,9 +518,13 @@ void midi_init()
         [](uint8_t * buffer, uint16_t length, void * context){
             controller_handle_msg(buffer, length, SourceMidi);
         },
+        #if ENABLE_NRPN_CONTROL
         [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
             controller_handle_nrpn(channel, type, action, controller, value, SourceMidi);
         },
+        #else
+        NULL,
+        #endif
         NULL,
         NULL
     );
@@ -596,51 +563,14 @@ void midi_tx(uint8_t * buffer, size_t length)
 
 void netmidi_init()
 {
-    // force initialization of interface/mac etc (it's really ridiculous how they designed this)
-    eth.set_blocking(false);
-    wait_us(10); // just a little bit of waiting to avoid potential problem of non-blocking setting not yet taking effect
-    eth.connect();
-    eth.disconnect();
-    eth.set_blocking(true);
-    
-    // low-level: set MAC filter to pass multicast
-    STM32_EMAC &emac = STM32_EMAC::get_instance();
-    ETH_MACFilterConfigTypeDef pFilterConfig;
-    HAL_ETH_GetMACFilterConfig(&emac.EthHandle, &pFilterConfig);
-    pFilterConfig.PassAllMulticast = ENABLE;
-    HAL_ETH_SetMACFilterConfig(&emac.EthHandle, &pFilterConfig);
-
+    // low-level enable multicast pass all 
+    WRITE_REG(ETH->MACPFR, READ_REG(ETH->MACPFR) | (1 << 4));
 
     const char * mac = eth.get_mac_address();
     printf("mac %s\n", mac ? mac : "none");
 
-    sprintf((char*)RR_A.name, NET_HOSTNAME_FMT, config.device_id);
-    printf("hostname %s\n", (char*)&RR_A.name[1]);
-
-    sprintf((char*)RR_AAAA.name, NET_SERVICENAME_FMT, config.device_id);
-    printf("servicename %s\n", (char*)&RR_AAAA.name[1]);
-
 
     eth.add_event_listener(eth_status_changed);
-
-    // Aggregat-02-245631f.local
-
-    // mDNS initialization
-    minimr_dns_normalize_name(RR_A.name, &RR_A.name_length);
-    minimr_dns_normalize_name(RR_AAAA.name, &RR_AAAA.name_length);
-
-    memset(mdns_records, 0, sizeof(mdns_records));
-
-    if (mdns_sock.open(&eth)){
-        printf("mdns_sock: open error\n");
-        return;
-    }
-    if (mdns_sock.bind(5353)){
-        printf("mdns_sock: bind error\n");
-        return;
-    }
-    mdns_sock.set_blocking(false);
-
 
     
     if (udp_sock.open(&eth)){
@@ -683,7 +613,7 @@ void eth_status_changed(nsapi_event_t evt, intptr_t intptr)
             if (eth_was_up){
                 eth_was_up = false;
                 eth_reconnect = true;
-                mdns_sock.leave_multicast_group(mdns_addr);
+                mdns_deinit();
                 printf("should reconnect\n");
                 // eth.disconnect();
             }
@@ -748,8 +678,8 @@ bool eth_connect()
     eth.disconnect();
 
     // setup ipv4 link-local address
-    uint8_t s3 = (((config.device_id >> 24) ^ (config.device_id >> 16)) % 254) + 1;
-    uint8_t s4 = (config.device_id >> 8) ^ config.device_id;
+    uint8_t s3 = (((hw_device_id >> 24) ^ (hw_device_id >> 16)) % 254) + 1;
+    uint8_t s4 = (hw_device_id >> 8) ^ hw_device_id;
     char ll[20] = "";
     sprintf(ll, "169.254.%hhu.%hhu", s3, s4);
     ip.set_ip_address(ll);
@@ -766,11 +696,17 @@ bool eth_connect()
     return true;
 }
 
-void mdns_configure()
+void mdns_init()
 {
+    memset(mdns_records, 0, sizeof(mdns_records));
 
     if (ip.get_ip_version() == NSAPI_IPv4){
         memcpy(RR_A.ipv4, ip.get_ip_bytes(), sizeof(RR_A.ipv4));
+
+        sprintf((char*)RR_A.name, NET_HOSTNAME_FMT, get_device_id());
+        printf("A.name %s\n", (char*)RR_A.name);
+
+        minimr_dns_normalize_name(RR_A.name, &RR_A.name_length);
 
         mdns_records[0] = (struct minimr_dns_rr *)&RR_A;
 
@@ -779,17 +715,45 @@ void mdns_configure()
     } else {
         memcpy(RR_AAAA.ipv6, ip.get_ip_bytes(), sizeof(RR_AAAA.ipv6));
 
+        sprintf((char*)RR_AAAA.name, NET_HOSTNAME_FMT, get_device_id());
+        printf("AAAA.name %s\n", (char*)RR_AAAA.name);
+
+        minimr_dns_normalize_name(RR_AAAA.name, &RR_AAAA.name_length);
+
+
         mdns_records[0] = (struct minimr_dns_rr *)&RR_AAAA;
 
         mdns_addr.set_ip_address("ff02::fb");
         mdns_addr.set_port(5353);
     }
 
+
+    if (mdns_sock.open(&eth)){
+        printf("mdns_sock: open error\n");
+        return;
+    }
+    if (mdns_sock.bind(5353)){
+        printf("mdns_sock: bind error\n");
+        return;
+    }
+    mdns_sock.set_blocking(false);
+
     if (mdns_sock.join_multicast_group(mdns_addr)){
         printf("mdns_sock: failed to join multicast grp\n");
         return;
     }
     
+}
+
+void mdns_deinit()
+{
+    if (mdns_sock.leave_multicast_group(mdns_addr)){
+        printf("mdns_sock: failed leave multicast group\n");
+    }
+
+    if (mdns_sock.close()){
+        printf("mdns_sock: failed close\n");
+    }
 }
 
 int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr, ...)
@@ -872,7 +836,7 @@ void eth_ifup()
             eth_reconnect = false;
 
             
-            mdns_configure();
+            mdns_init();
 
             // only announcing twice
             res = minimr_announce(mdns_records, MDNS_RR_COUNT, mdns_out, &mdns_outlen, sizeof(mdns_out), NULL);
@@ -969,7 +933,7 @@ int main()
     printf("\nRESTART\n");
     // midi_tx((uint8_t*)"RESTART\n",8);
 
-    load_config();
+    core_init();
 
     // initialize gpios
     gpio_init();
@@ -977,14 +941,12 @@ int main()
     // initialize motors
     motors_init();
 
-    // initialize controller
-    controller_init();
-
     // any com interface initialization
     usbmidi_init();
     midi_init();
     netmidi_init();
 
+    // start motors
     motors_resume();
 
     while (true) {
