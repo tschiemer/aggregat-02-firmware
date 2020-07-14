@@ -1,25 +1,23 @@
 #include "AggregatMotor.h"
+#include "config.h"
 
-AggregatMotor::AggregatMotor(PinName pwm_pin_name, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
-    : m_pwm(pwm_pin_name)
+AggregatMotor::AggregatMotor(PinName pwr_pin_name, PinName pwm_pin_name, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
+    : m_pwr(pwr_pin_name, MOTOR_PWR_AT_STARTUP), m_pwm(pwm_pin_name)
 {
     set_refresh_rate(refresh_rate_hz);
     
     m_pulsewidth_usec_min = pulsewidth_usec_min;
     m_pulsewidth_usec_max = pulsewidth_usec_max;  
 
+    m_value_changed = false;
+
     init(); 
 }
 
-AggregatMotor::AggregatMotor(const PinMap &pwm_pin_map, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
-    : m_pwm(pwm_pin_map)
+void AggregatMotor::init()
 {
-    set_refresh_rate(refresh_rate_hz);
-
-    m_pulsewidth_usec_min = pulsewidth_usec_min;
-    m_pulsewidth_usec_max = pulsewidth_usec_max;  
-
-    init();
+    // start suspended
+    m_pwm.suspend();
 }
 
 void AggregatMotor::set_refresh_rate(int refresh_rate_hz)
@@ -31,14 +29,12 @@ void AggregatMotor::set_refresh_rate(int refresh_rate_hz)
     m_pwm.period(period_sec);
 }
 
-void AggregatMotor::init()
+float AggregatMotor::get_pos()
 {
-    // start suspended
-    m_pwm.suspend();
+    return (float)(m_pulsewidth_usec_current - m_pulsewidth_usec_min) / (float)(m_pulsewidth_usec_max - m_pulsewidth_usec_min);
 }
 
-
-void AggregatMotor::set(float pos)
+void AggregatMotor::set_pos(float pos)
 {
     // Guard
     if (pos < 0.0) {
@@ -57,16 +53,13 @@ void AggregatMotor::set(float pos)
     }
 
     m_pulsewidth_usec_current = newval;
+    m_value_changed = true;
 
     // printf("usec_pos %d\n", m_pulsewidth_usec_current);
 
     m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
 }
 
-float AggregatMotor::get()
-{
-    return (float)(m_pulsewidth_usec_current - m_pulsewidth_usec_min) / (float)(m_pulsewidth_usec_max - m_pulsewidth_usec_min);
-}
 
 void AggregatMotor::suspend()
 {
@@ -76,10 +69,15 @@ void AggregatMotor::suspend()
 void AggregatMotor::resume()
 {
     m_pwm.resume();
-    m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
+
+    // only update if actually set.
+    if (m_value_changed){
+        m_value_changed = false;
+        m_pwm.pulsewidth_us(m_pulsewidth_usec_current);
+    }
 }
 
-// void AggregatMotor::run()
-// {
-
-// }
+void AggregatMotor::run()
+{
+    //
+}

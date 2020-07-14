@@ -43,6 +43,7 @@ void gpio_init();
 void motors_init();
 void motors_suspend();
 void motors_resume();
+void motors_run();
 
 // void controller_init();
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source);
@@ -93,33 +94,62 @@ int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr
 
 uint32_t hw_device_id = 0;
 
+
+
 volatile bool motors_running = false;
+
 AggregatMotor motors[MOTOR_COUNT] = {
-    #if MOTOR_COUNT > 0
-  AggregatMotor(MOTOR_1_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #if MOTOR_COUNT > 0
+  AggregatMotor(MOTOR_1_PWR_PIN, MOTOR_1_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 1
-  AggregatMotor(MOTOR_2_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_2_PWR_PIN, MOTOR_2_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 2
-  AggregatMotor(MOTOR_3_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_3_PWR_PIN, MOTOR_3_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 3
-  AggregatMotor(MOTOR_4_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_4_PWR_PIN, MOTOR_4_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 4
-  AggregatMotor(MOTOR_5_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_5_PWR_PIN, MOTOR_5_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 5
-  AggregatMotor(MOTOR_6_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_6_PWR_PIN, MOTOR_6_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 6
-  AggregatMotor(MOTOR_7_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  AggregatMotor(MOTOR_7_PWR_PIN, MOTOR_7_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
   #if MOTOR_COUNT > 7
-  AggregatMotor(MOTOR_8_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC)
+  AggregatMotor(MOTOR_8_PWR_PIN, MOTOR_8_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 8
+  AggregatMotor(MOTOR_9_PWR_PIN, MOTOR_9_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 9
+  AggregatMotor(MOTOR_10_PWR_PIN, MOTOR_10_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 10
+  AggregatMotor(MOTOR_11_PWR_PIN, MOTOR_11_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 11
+  AggregatMotor(MOTOR_12_PWR_PIN, MOTOR_12_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 12
+  AggregatMotor(MOTOR_13_PWR_PIN, MOTOR_13_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 13
+  AggregatMotor(MOTOR_14_PWR_PIN, MOTOR_14_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 14
+  AggregatMotor(MOTOR_15_PWR_PIN, MOTOR_15_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
+  #endif
+  #if MOTOR_COUNT > 15
+  AggregatMotor(MOTOR_16_PWR_PIN, MOTOR_16_PWM_PIN, MOTOR_REFRESH_RATE_HZ, MOTOR_PULSEWIDTH_MIN_USEC, MOTOR_PULSEWIDTH_MAX_USEC),
   #endif
 };
+
+
 
 #if USE_CHANNEL_SELECT 
 BusIn channel_select_bus(CHANNEL_SELECT_PIN_1, CHANNEL_SELECT_PIN_2, CHANNEL_SELECT_PIN_3, CHANNEL_SELECT_PIN_4);
@@ -136,6 +166,7 @@ BusIn device_id_bus(DEVICE_ID_SELECT_PIN_1, DEVICE_ID_SELECT_PIN_2, DEVICE_ID_SE
 #endif //USE_ID_SELECT
 
 
+
 #if USE_USBMIDI == 1
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
 MidiMessage::SimpleParser_t usbmidi_parser;
@@ -145,13 +176,17 @@ DigitalOut usbmidi_led(USB_CONNECTED_LED);
 #if USE_FORWARDING_CONTROLS
 DigitalIn usb_to_midi_pin(USB_TO_MIDI_PIN, PullUp);
 DigitalIn usb_to_net_pin(USB_TO_NET_PIN, PullUp);
+
 #define usb_to_midi()   usb_to_midi_pin.read()
 #define usb_to_net()    usb_to_net_pin.read()
 #else
 #define usb_to_midi()   USB_TO_MIDI_DEFAULT    
 #define usb_to_net()    USB_TO_NET_DEFAULT
-#endif // USE_FORWARDING_CONTROLS
-#endif
+#endif //USE_FORWARDING_CONTROLS
+
+#endif //USE_USBMIDI
+
+
 
 #if USE_MIDI == 1
 BufferedSerial midi(MIDI_TX_PIN, MIDI_RX_PIN);
@@ -183,6 +218,7 @@ DigitalOut net_led(NET_STATUS_LED);
 #if USE_FORWARDING_CONTROLS
 DigitalIn net_to_usb_pin(NET_TO_USB_PIN, PullUp);
 DigitalIn net_to_midi_pin(NET_TO_MIDI_PIN, PullUp);
+
 #define net_to_usb()    net_to_usb_pin.read()
 #define net_to_midi()   net_to_midi_pin.read()
 #else
@@ -212,15 +248,11 @@ UDPSocket mdns_sock;
 
 inline float u7_to_pos(uint8_t value)
 {
-    // assert_param((value & 0x7F) == 0);
-
     return ((float)value) / 128.0;
 }
 
 inline float u14_to_pos(uint16_t value)
 {
-    // assert_param((value & 0x3FFF) == 0);
-
     return ((float)value) / 16383.0;
 }
 
@@ -243,11 +275,6 @@ void core_init()
     srand(hw_device_id + time(NULL));
 }
 
-void save_config()
-{
-
-}
-
 void gpio_init()
 {
     #if USE_CHANNEL_SELECT
@@ -264,9 +291,9 @@ void motors_init()
     for(int i = 0; i < MOTOR_COUNT; i++){
 
         // init to center position
-        motors[i].set(0.5);
+        // motors[i] = 0.5;
 
-        // start suspended
+        // start suspended (well, they are initialized in suspended mode)
         motors[i].suspend();
     }
 }
@@ -288,10 +315,13 @@ void motors_resume()
     motors_running = true;
 }
 
-void controller_init()
+void motors_run()
 {
-
+    for(int i = 0; i < MOTOR_COUNT; i++){
+        motors[i].run();
+    }
 }
+
 
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 {
@@ -302,7 +332,8 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     // printf("\n");
 
 
-    #if ENABLE_CONTROLLER_LOGIC == 1
+    #if USE_CONTROLLER_LOGIC == 1
+
     MIDIMessage msg;
 
     msg.from_raw(buffer, length);
@@ -319,28 +350,22 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
             motors_suspend();
         }
 
-        #if ENABLE_SYSTEM_RESET == 1
+        #if USE_SYSTEM_RESET == 1
         // 0xFF = reset
         if (msg.data[0] == 0xFF){
             system_reset();
             printf("system_reset??\n");
         }
         #else
-        printf("ENABLE_SYSTEM_RESET == 0\n");
+        printf("USE_SYSTEM_RESET == 0\n");
         #endif
     }
 
 
-
+    // position control
     if (msg.type() == MIDIMessage::ControlChangeType){
-
-        // TO BE DEFINED
-        // printf("channel %d\n",get_channel());
-
-        // example
         if (msg.channel() == get_channel()){
             int32_t motori = msg.controller() - CC_CONTROLLER_OFFSET;
-            // printf("controller %d\n", motori);
 
             if (0 <= motori && motori < MOTOR_COUNT){
                 float pos = u7_to_pos(msg.value());
@@ -350,7 +375,7 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         }
     }
 
-    #if ENABLE_PITCHBEND_CONTROL
+    #if USE_PITCHBEND_CONTROL
     // each channel controls a motor starting from channel_offset
     if (msg.type() == MIDIMessage::PitchWheelType){
         int32_t motori = msg.channel();
@@ -361,9 +386,22 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
         }
         
     }
-    #endif //ENABLE_PITCHBEND_CONTROL
+    #endif //USE_PITCHBEND_CONTROL
 
-    #endif //ENABLE_CONTROLLER_LOGIC == 1
+    // power control
+    if (msg.type() == MIDIMessage::NoteOnType || msg.type() == MIDIMessage::NoteOffType){
+        if (msg.channel() == get_channel()){
+            int32_t motori = msg.controller() - CC_CONTROLLER_OFFSET;
+
+            if (0 <= motori && motori < MOTOR_COUNT){
+                // turn on or off
+                motors[motori] = msg.type() == MIDIMessage::NoteOnType;
+            }
+        }
+    }
+
+
+    #endif //USE_CONTROLLER_LOGIC == 1
 
     #if USE_USBMIDI
     if (source == SourceUsb){
@@ -397,10 +435,10 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     #endif
 }
 
-#if ENABLE_NRPN_CONTROL
+#if USE_NRPN_CONTROL
 void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
 {
-    #if ENABLE_CONTROLLER_LOGIC == 1
+    #if USE_CONTROLLER_LOGIC == 1
     if (type == MidiMessage::NRpnTypeNRPN && channel == get_channel() && action == MidiMessage::NRpnActionValue){
         int32_t motori = controller - CC_CONTROLLER_OFFSET;
         // printf("controller %d\n", motori);
@@ -411,9 +449,9 @@ void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiM
             motors[motori] = pos;
         }
     }
-    #endif //ENABLE_CONTROLLER_LOGIC == 1
+    #endif //USE_CONTROLLER_LOGIC == 1
 }
-#endif //ENABLE_NRPN_CONTROL
+#endif //USE_NRPN_CONTROL
 
 
 #if USE_USBMIDI == 1
@@ -434,7 +472,7 @@ void usbmidi_init()
         [](uint8_t * buffer, uint16_t length, void * context){
             controller_handle_msg(buffer, length, SourceUsb);
         },
-        #if ENABLE_NRPN_CONTROL
+        #if USE_NRPN_CONTROL
         [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
             controller_handle_nrpn(channel, type, action, controller, value, SourceUsb);
         },
@@ -518,7 +556,7 @@ void midi_init()
         [](uint8_t * buffer, uint16_t length, void * context){
             controller_handle_msg(buffer, length, SourceMidi);
         },
-        #if ENABLE_NRPN_CONTROL
+        #if USE_NRPN_CONTROL
         [](uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, void * context){
             controller_handle_nrpn(channel, type, action, controller, value, SourceMidi);
         },
@@ -539,10 +577,6 @@ void midi_run()
         size_t rlen = midi.read(buffer, sizeof(buffer));
 
         if (rlen > 0){
-            // echo
-            // midi_tx(buffer,rlen);
-            // printf("midi rx %d\n", rlen);
-
             MidiMessage::simpleparser_receivedData(&midi_parser, buffer, (uint8_t)rlen);
         }
     }
@@ -947,12 +981,13 @@ int main()
     netmidi_init();
 
     // start motors
-    motors_resume();
+    // motors_resume();
 
     while (true) {
         usbmidi_run();
         midi_run();
         netmidi_run();
+        motors_run();
     }
 }
 
