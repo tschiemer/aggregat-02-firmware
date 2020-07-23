@@ -1,8 +1,8 @@
 #include "AggregatMotor.h"
-#include "config.h"
+// #include "config.h"
 
 AggregatMotor::AggregatMotor(PinName pwr_pin_name, PinName pwm_pin_name, int refresh_rate_hz, int pulsewidth_usec_min, int pulsewidth_usec_max)
-    : m_pwr(pwr_pin_name, MOTOR_PWR_AT_STARTUP), m_pwm(pwm_pin_name)
+    : m_pwr(pwr_pin_name), m_pwm(pwm_pin_name)
 {
     set_refresh_rate(refresh_rate_hz);
     

@@ -45,6 +45,8 @@ void motors_suspend();
 void motors_resume();
 void motors_run();
 
+void motors_center();
+
 // void controller_init();
 void controller_handle_msg(uint8_t * buffer, size_t length, Source source);
 
@@ -55,10 +57,12 @@ void usbmidi_tx(uint8_t * buffer, size_t length);
 
 // void usbmidi_event_callback();
 void usbmidi_rx(uint8_t * buffer, uint8_t length, void * context); // parser callback handler
+
 #else //USE_USBMIDI == 0
 #define usbmidi_init()
 #define usbmidi_run()
 #define usbmidi_tx()
+
 #endif //USE_USBMIDI
 
 #if USE_MIDI == 1
@@ -94,9 +98,11 @@ int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr
 
 uint32_t hw_device_id = 0;
 
-
+volatile bool btn_plus_1_request = false;
+volatile bool btn_plus_2_request = false;
 
 volatile bool motors_running = false;
+volatile bool motors_center_request = false;
 
 AggregatMotor motors[MOTOR_COUNT] = {
   #if MOTOR_COUNT > 0
@@ -149,13 +155,16 @@ AggregatMotor motors[MOTOR_COUNT] = {
   #endif
 };
 
-
+#if USE_STATUS_LEDS
+DigitalOut led_pwr(LED_PWR_PIN, 1);
+DigitalOut led_motors(LED_MTR_PIN, 0);
+#endif
 
 #if USE_CHANNEL_SELECT 
 BusIn channel_select_bus(CHANNEL_SELECT_PIN_1, CHANNEL_SELECT_PIN_2, CHANNEL_SELECT_PIN_3, CHANNEL_SELECT_PIN_4);
 #define get_channel() channel_select_bus.read()
 #else
-#define get_channel() CHANNEL_OFFSET
+#define get_channel() CHANNEL_SELECT_DEFAULT
 #endif //USE_CHANNEL_SELECT
 
 #if USE_DEVICE_ID_SELECT
@@ -165,47 +174,69 @@ BusIn device_id_bus(DEVICE_ID_SELECT_PIN_1, DEVICE_ID_SELECT_PIN_2, DEVICE_ID_SE
 #define get_device_id()     DEVICE_ID_SELECT_DEFAULT
 #endif //USE_ID_SELECT
 
+#if USE_CFG
+DigitalIn cfg1(CFG_RSRV_1_PIN);
+DigitalIn cfg2(CFG_RSRV_2_PIN);
+#endif //USE_CFG
+
+#if USE_BUTTONS
+InterruptIn btn_center(BTN_CENTER_PIN);
+InterruptIn btn_plus1(BTN_PLUS_1_PIN);
+InterruptIn btn_plus2(BTN_PLUS_2_PIN);
+
+volatile bool btn_center_touched = false;
+volatile bool btn_plus1_touched = false;
+volatile bool btn_plus2_touched = false;
+#endif
 
 
-#if USE_USBMIDI == 1
+#if USE_USBMIDI
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
 MidiMessage::SimpleParser_t usbmidi_parser;
+#endif //USE_USBMIDI
 
-DigitalOut usbmidi_led(USB_CONNECTED_LED);
 
-#if USE_FORWARDING_CONTROLS
-DigitalIn usb_to_midi_pin(USB_TO_MIDI_PIN, PullUp);
-DigitalIn usb_to_net_pin(USB_TO_NET_PIN, PullUp);
+#if USE_USBMIDI && USE_STATUS_LEDS
+DigitalOut usb_led1(LED_USB_1_PIN);
+DigitalOut usb_led2(LED_USB_2_PIN);
+#endif
+
+#if USE_USBMIDI && USE_FORWARDING_CONTROLS
+DigitalIn usb_to_midi_pin(USB_TO_MIDI_PIN);
+DigitalIn usb_to_net_pin(USB_TO_NET_PIN);
 
 #define usb_to_midi()   usb_to_midi_pin.read()
 #define usb_to_net()    usb_to_net_pin.read()
 #else
 #define usb_to_midi()   USB_TO_MIDI_DEFAULT    
 #define usb_to_net()    USB_TO_NET_DEFAULT
-#endif //USE_FORWARDING_CONTROLS
-
-#endif //USE_USBMIDI
+#endif //USE_USBMIDI && USE_FORWARDING_CONTROLS
 
 
 
-#if USE_MIDI == 1
+#if USE_MIDI
 BufferedSerial midi(MIDI_TX_PIN, MIDI_RX_PIN);
 
 MidiMessage::SimpleParser_t midi_parser;
+#endif //USE_USBMIDI
 
-#if USE_FORWARDING_CONTROLS
-DigitalIn midi_to_usb_pin(MIDI_TO_USB_PIN, PullUp);
-DigitalIn midi_to_net_pin(MIDI_TO_NET_PIN, PullUp);
+#if USE_MIDI && USE_FORWARDING_CONTROLS
+DigitalIn midi_to_usb_pin(MIDI_TO_USB_PIN);
+DigitalIn midi_to_net_pin(MIDI_TO_NET_PIN);
 #define midi_to_usb()   midi_to_usb_pin.read()
 #define midi_to_net()   midi_to_net_pin.read()
 #else
 #define midi_to_usb()   MIDI_TO_USB_DEFAULT
 #define midi_to_net()   MIDI_TO_NET_DEFAULT
-#endif // USE_FORWARDING_CONTROLS
+#endif // USE_MIDI && USE_FORWARDING_CONTROLS
 
-#endif //USE_USBMIDI
+#if USE_MIDI && USE_STATUS_LEDS
+DigitalOut midi_led1(LED_MIDI_1_PIN);
+DigitalOut midi_led2(LED_MIDI_2_PIN);
+#endif
 
-#if USE_NETMIDI == 1
+
+#if USE_NETMIDI 
 EthernetInterface eth;
 Thread net_thread;
 SocketAddress ip;
@@ -213,18 +244,7 @@ UDPSocket udp_sock;
 
 bool eth_reconnect = false; 
 
-DigitalOut net_led(NET_STATUS_LED);
-
-#if USE_FORWARDING_CONTROLS
-DigitalIn net_to_usb_pin(NET_TO_USB_PIN, PullUp);
-DigitalIn net_to_midi_pin(NET_TO_MIDI_PIN, PullUp);
-
-#define net_to_usb()    net_to_usb_pin.read()
-#define net_to_midi()   net_to_midi_pin.read()
-#else
-#define net_to_usb()    NET_TO_USB_DEFAULT
-#define net_to_midi()   NET_TO_MIDI_DEFAULT
-#endif // USE_FORWARDING_CONTROLS
+// DigitalOut net_led(LED_NET_1_PIN);
 
 minimr_dns_rr_a RR_A = {
     .type = MINIMR_DNS_TYPE_A,
@@ -242,6 +262,22 @@ struct minimr_dns_rr * mdns_records[MDNS_RR_COUNT];
 SocketAddress mdns_addr;
 
 UDPSocket mdns_sock;
+#endif
+
+#if USE_NETMIDI && USE_FORWARDING_CONTROLS
+DigitalIn net_to_usb_pin(NET_TO_USB_PIN);
+DigitalIn net_to_midi_pin(NET_TO_MIDI_PIN);
+
+#define net_to_usb()    net_to_usb_pin.read()
+#define net_to_midi()   net_to_midi_pin.read()
+#else
+#define net_to_usb()    NET_TO_USB_DEFAULT
+#define net_to_midi()   NET_TO_MIDI_DEFAULT
+#endif // USE_NETMIDI && USE_FORWARDING_CONTROLS
+
+#if USE_NETMIDI && USE_STATUS_LEDS
+DigitalOut net_led1(LED_NET_1_PIN);
+DigitalOut net_led2(LED_NET_2_PIN);
 #endif
 
 /************ INLINE FUNCTIONS ************/
@@ -277,12 +313,45 @@ void core_init()
 
 void gpio_init()
 {
-    #if USE_CHANNEL_SELECT
-    channel_select_bus.mode(PullUp);
-    #endif
 
     #if USE_DEVICE_ID_SELECT
-    device_id_bus.mode(PullUp);
+    // device_id_bus.mode(PullNone);
+    #endif
+
+    #if USE_CHANNEL_SELECT
+    // channel_select_bus.mode(PullNone);
+    #endif
+
+    #if USE_BUTTONS
+    // btn_center.mode(PullDown);
+    btn_center.rise([](){
+        // motors_center_request = true;
+
+        usb_led2 = !usb_led2;
+    });
+    // btn_center.mode(PullUp);
+    btn_plus1.rise([](){
+        midi_led2 = !midi_led2;
+    });
+    // btn_center.mode(PullDefault);
+    btn_plus2.rise([](){
+        net_led2 = !net_led2;
+    });
+    #endif //USE_BUTTONS
+
+    printf("device_id %d\n", get_device_id());
+    printf("channel %d\n", get_channel());
+
+    printf("usb -> midi %d\n", usb_to_midi());
+    printf("usb -> net %d\n", usb_to_net());
+    printf("midi -> usb %d\n", midi_to_usb());
+    printf("midi -> net %d\n", midi_to_net());
+    printf("net -> usb %d\n", net_to_usb());
+    printf("net -> midi %d\n", net_to_midi());
+
+    #if USE_CFG
+    printf("cfg1 %d\n", cfg1.read());
+    printf("cfg2 %d\n", cfg2.read());
     #endif
 }
 
@@ -317,8 +386,20 @@ void motors_resume()
 
 void motors_run()
 {
+    if (motors_center_request){
+        motors_center();
+        motors_center_request = false;
+    }
+
     for(int i = 0; i < MOTOR_COUNT; i++){
         motors[i].run();
+    }
+}
+
+void motors_center()
+{
+    for(int i = 0; i < MOTOR_COUNT; i++){
+        motors[i] = 0.5;
     }
 }
 
@@ -486,7 +567,7 @@ void usbmidi_init()
 
 void usbmidi_run()
 {
-    usbmidi_led = usbmidi.connected();
+    usb_led1 = usbmidi.connected();
 
     if (usbmidi.connected() == false){
 
@@ -929,7 +1010,7 @@ void eth_ifup()
 
 void netmidi_run()
 {
-    net_led = eth.get_connection_status() == NSAPI_STATUS_GLOBAL_UP;
+    net_led1 = eth.get_connection_status() == NSAPI_STATUS_GLOBAL_UP;
 
     if (eth.get_connection_status() != NSAPI_STATUS_GLOBAL_UP){
         return;
