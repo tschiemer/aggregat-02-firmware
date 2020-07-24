@@ -43,6 +43,12 @@ Forward X to Y | 9 | Enable forwarding of messages from USB/MIDI/NET to USB/MIDI
 
 Pin | Function | Description | Connector
 --- | --- | --- | ---
+PD8 | DBG SERIAL | TX | CN1 (USB)
+PD9 | DBG SERIAL | RX
+ |
+PD2 | UART | MIDI RX | CN7
+PC12 | UART | MIDI TX
+ |
 D11 (PB5) | PWM | Motor 1 | CN7
 D10 (PD14)| PWM | Motor 2
 D9 (PD15) | PWM | Motor 3
@@ -54,29 +60,58 @@ D35 (PB11)| PWM | Motor 8
 D33 (PB0) | PWM | *Reserve*
 D32 (PA0) | PWM | *Reserve*
  |
- 
- |
-D43 (PC8) | GPIO IN | MIDI Channel Select 1 | CN8
-D44 (PC9) | GPIO IN | MIDI Channel Select 2
-D45 (PC10)| GPIO IN | MIDI Channel Select 3
-D46 (PC11)| GPIO IN | MIDI Channel Select 4
-D47 (PC12)| GPIO IN | Hostname ID 1
-D48 (PD2) | GPIO IN | Hostname ID 2
-D49 (PG2) | GPIO IN | Hostname ID 3
-D50 (PG3) | GPIO IN | Hostname ID 4
-D51 (PD7) | GPIO IN | USB to MIDI | CN9
-D52 (PD6) | GPIO IN | USB to NET
-D53 (PD5) | GPIO IN | MIDI to USB
-D54 (PD4) | GPIO IN | MIDI to NET
-D55 (PD3) | GPIO IN | NET to USB
-D56 (PD2) | GPIO IN | NET to MIDI
-A0 (PA3) | GPIO OUT | LED PWR
-A1 (PC0) | GPIO OUT | LED MIDI RX
-A2 (PC3) | GPIO OUT | LED MIDI TX
-A3 (PB1) | GPIO OUT | LED USB Connected
-A4 (PC2) | GPIO OUT | LED USB TX
-A5 (PF10)| GPIO OUT | LED NET
 
+### iocontrols
+
+NUCLEO connectors CN9 (+CN8) only.
+
+#### CN1 (iocontrols connector)
+
+ Pin | Function | Description | Nucleo Connector
+ --- | --- | --- | ---
+3V3 (7) | | | CN 8
+GND (11) |
+NRST (5) |
+
+#### CN2 (iocontrols connector)
+
+ Pin | Function | Description | Nucleo Connector
+ --- | --- | --- | ---
+PA3 (1) | GPIO OUT | LED Motor | CN9 (lhs)
+PC0 (3) | GPIO OUT | LED Power
+PC3 (5) | GPIO IN | MIDI Channel Select 4 (MSB)
+PB1 (7) | GPIO IN | MIDI Channel Select 3
+PC2 (9) | GPIO IN | MIDI Channel Select 2
+PF10 (11) | GPIO IN | MIDI Channel Select 1 (LSB)
+PG2 (14) | GPIO IN | Hostname ID 4 (MSB) | CN8 (rhs)
+PG3 (16) | GPIO IN | Hostname ID 3
+PF2 (17) | GPIO IN | Hostname ID 2 | CN9 (lhs)
+PF1 (19) | GPIO IN | Hostname ID 1 (LSB)
+PF0 (21) | GPIO IN | USB to MIDI
+GND (23) | GND
+PD0 (25) | GPIO IN | USB to NET
+PD1 (27) | GPIO IN | MIDI to USB
+PG0 (29) | GPIO IN | MIDI to NET
+
+#### CN3 (iocontrols connector)
+
+Pin | Function | Description | Nucleo Connector
+--- | --- | --- | ---
+PD7 (2) | GPIO IN | NET to USB | CN9 (rhs) | CN3
+PD6 (4) | GPIO IN | NET to USB
+PD5 (6) | GPIO IN | CFG1 (RSRV)
+PD4 (8) | GPIO IN | CFG2 (RSRV)
+PD3 (10) | TBD | TBD
+GND (12) | GND
+PE2 (14) | GPIO IN | Button Center
+PE4 (16) | GPIO IN | Button Plus1 (RSRV)
+PE5 (18) | GPIO IN | Button Plus2 (RSRV)
+PE6 (20) | GPIO OUT | LED 11 (USB1)
+PE3 (22) | GPIO OUT | LED 12 (USB2)
+PF8 (24) | GPIO OUT | LED 21 (MIDI1)
+PF7 (26) | GPIO OUT | LED 22 (MIDI2)
+PF9 (28) | GPIO OUT | LED 31 (NET1)
+PG1 (30) | GPIO OUT | LED 32 (NET2)
 
 ## Installation / Flashing
 
