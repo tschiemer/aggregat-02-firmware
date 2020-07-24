@@ -80,13 +80,13 @@ Number | Item | Cost per (10/100) Unit(s)  | Cost
 --- | --- | --- | ---
 1 | [ST NUCLEO-H743ZI2](https://www.digikey.ch/product-detail/en/stmicroelectronics/NUCLEO-H743ZI2/497-19452-ND/10130892) (Base Board) | 25.65 | 25.65
 1 | [IOControls board](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-iocontrols) | ~20.00 | 20.00
-1 | [Aggregat shield](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-shield) |
- |
+1 | [Aggregat shield](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-shield)
+ | 
 1 | [USB 2.0 B Connector](https://www.digikey.ch/product-detail/en/amphenol-icc-commercial-products/MUSB-D511-00/MUSB-D511-00-ND/2567127) | 9.56 | 9.56
 3 | [DIN 5-pol (MIDI) Connector](https://www.digikey.ch/product-detail/en/cui-devices/SD-50LS/CP-1235-ND/500833) | 4.17 | 12.52
 1 | [AC-DC Converter 5V 14A](https://www.digikey.ch/product-detail/en/mean-well-usa-inc/LRS-75-5/1866-3364-ND/7705056) | 17.25 | 17.25
 1 | [USB Power Adapter](https://www.digikey.ch/product-detail/en/cui-inc/SWI3-5-E-I38/102-4482-ND/7784533) | 4.94 | 4.94
-1 | [3 Pin connector](https://www.digikey.ch/product-detail/en/molex/0510210300/WM1721-ND/242843) (IOControls) | 0.21 | 0.21
+1 | [3 Pin connector](https://www.digikey.ch/product-detail/en/molex/0510210300/WM1721-ND/242843) (IOControls) | 0.21 | 0.42
 2 | [15 Pin connector](https://www.digikey.ch/product-detail/en/molex/0510211500/WM17002-ND/259375) (IOControls) | 0.40 | 0.80
 33 | [Socket connector for crimping](https://www.digikey.ch/product-detail/en/molex/0500798000/WM1142CT-ND/467835) (IOControls) | 2.82 (100) | < 1.00
 1 | [Power plug w/ switch](https://www.digikey.ch/product-detail/en/schurter-inc/DC11-0001-001/486-1073-ND/641579) | 13.08 | 13.08
