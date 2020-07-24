@@ -70,7 +70,7 @@ See file `config.h`
 - Base board: [ST NUCLEO-H743ZI2](https://www.st.com/en/evaluation-tools/nucleo-h743zi.html) (also see [@mbed](https://os.mbed.com/platforms/ST-Nucleo-H743ZI2/))
    *note* can possibly be scaled down to a (marginally) cheaper version
 - IOControls: https://gitlab.zhdk.ch/aggregat-02/a01-pcb-iocontrols
-- Aggregat shield: https://gitlab.zhdk.ch/aggregat-02/a01-pcb-shield
+- Aggregat core board: https://gitlab.zhdk.ch/aggregat-02/a01-pcb-core
 
 ### Bill of Materials
 
@@ -80,7 +80,7 @@ Number | Item | Cost per (10/100) Unit(s)  | Cost
 --- | --- | --- | ---
 1 | [ST NUCLEO-H743ZI2](https://www.digikey.ch/product-detail/en/stmicroelectronics/NUCLEO-H743ZI2/497-19452-ND/10130892) (Base Board) | 25.65 | 25.65
 1 | [IOControls board](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-iocontrols) | ~20.00 | 20.00
-1 | [Aggregat shield](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-shield)
+1 | [Aggregat core board](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-core)
 | |
 1 | [USB 2.0 B Connector](https://www.digikey.ch/product-detail/en/amphenol-icc-commercial-products/MUSB-D511-00/MUSB-D511-00-ND/2567127) | 9.56 | 9.56
 3 | [DIN 5-pol (MIDI) Connector](https://www.digikey.ch/product-detail/en/cui-devices/SD-50LS/CP-1235-ND/500833) | 4.17 | 12.52
