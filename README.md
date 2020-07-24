@@ -20,6 +20,8 @@ https://aggregat.zhdk.ch/
     2. [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
     3. *Postpone (when components are made by pt)* RTPMIDI (complex)
 - [ ] Control Logic
+  - [x] System commands (reset/continue/etc)
+  - [x] Motor Control (PWR + Position) using CC/NRPN/Note on/off
 - [ ] Motor Control
   - [ ] Verify pin availability for 16 motors/PWMs
   - [ ] SSR Relays???
@@ -40,6 +42,56 @@ https://aggregat.zhdk.ch/
 
 - as of 2020-07-02 ethernet interferes with the USB Device interface causing a permanent USB fail, but only if both are connected *at the same time*. It's a problem of the underlying system which might get resolve d in the future.
 
+## MIDI Control
+
+**IMPORTANT NOTE: MIDI channels and controller number etc might have a range of 1-16, 1-128 respectively, but actual data being sent it 0-15, 0-127 respectively. So keep this in mind when reading this documentation and when trying to configure any device.**
+
+Also see demo Max/MSP in `max`.
+
+Please understand the following basic settings/definitions:
+
+- `<midi-channel>` is defined through 4-Pin DIP-Switch (binary setting of values 0 - 15, ie MIDI Channels 1 - 16)
+
+- `<cc-offset> := 102`
+
+
+### General Control
+
+System real-time messages do not use a channel, thus they affect *all* connected devices (also see https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message)
+
+- `RESET` ( 0b11111111 )
+
+  resets all devices (ie all devices restart)
+
+- `STOP` ( 0b11111100 )
+
+  suspend all motor functions
+
+- `START` ( 0b11111101 ) or `CONTINUE` ( 0b11111011 )
+
+  continue (unsuspend) all motor functions
+
+### Motor 0 - (N-1) where N := the number of motors
+
+Turn on/off power of motor M (0 - (N-1)):
+
+    Note on/off <note := M> <velocity (any)>
+
+Set motor M position to P (0 - 127):
+
+    CC <midi-channel> <controller := <cc-offset> + M> <value := P>
+
+or when using NRPN, then P (0 - 16383):
+
+    NRPN <midi-channel> <controller := M> <value := P>
+
+So, to set the 9th motor M := 8 to center position P := 127/2 or 16383/2 on device listening to *MIDI* channel 4 you would do..
+
+    CC 3 110 64
+
+or
+
+    NRPN 3 8 8192
 
 ## Hardware Controls
 
