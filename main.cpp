@@ -4,11 +4,17 @@
 
 #include "AggregatMotor.h"
 
-#if USE_USBMIDI == 1
+#include "midimessage/midimessage.h"
+#include "midimessage/simpleparser.h"
+#include "midimessage/packers.h"
+
+
+#if USE_USBMIDI
 #include "UsbMidiAggregat.h"
 #endif
 
-#if USE_NETMIDI == 1
+
+#if USE_NETMIDI
 // low level interfaces needed to solve platform bug
 #include "stm32h743xx.h"
 #include "stm32xx_emac.h"
@@ -19,11 +25,9 @@
 
 // mdns responder
 #include "minimr.h"
-#endif
+#endif //USE_NETMIDI
 
-#include "midimessage/midimessage.h"
-#include "midimessage/simpleparser.h"
-#include "midimessage/packers.h"
+
 
 
 /************ TYPES ************/
@@ -62,8 +66,9 @@ void usbmidi_rx(uint8_t * buffer, uint8_t length, void * context); // parser cal
 #define usbmidi_init()
 #define usbmidi_run()
 #define usbmidi_tx()
-
 #endif //USE_USBMIDI
+
+
 
 #if USE_MIDI == 1
 void midi_init();
@@ -76,6 +81,8 @@ void midi_rx(uint8_t * buffer, uint8_t length, void * context); // parser callba
 #define midi_tx(buffer, length)
 #define midi_run()
 #endif //USE_MIDI
+
+
 
 #if USE_NETMIDI == 1
 void netmidi_init();
@@ -93,6 +100,9 @@ int mdns_rr_callback(enum minimr_dns_rr_fun_type type, struct minimr_dns_rr * rr
 #define netmidi_run()
 #define netmidi_tx(buffer, length)
 #endif //USE_NETMIDI
+
+
+
 
 /************ LOCAL VARIABLES ************/
 
@@ -155,10 +165,6 @@ AggregatMotor motors[MOTOR_COUNT] = {
   #endif
 };
 
-#if USE_STATUS_LEDS
-DigitalOut led_pwr(LED_PWR_PIN, 1);
-DigitalOut led_motors(LED_MTR_PIN, 0);
-#endif
 
 #if USE_CHANNEL_SELECT 
 BusIn channel_select_bus(CHANNEL_SELECT_PIN_1, CHANNEL_SELECT_PIN_2, CHANNEL_SELECT_PIN_3, CHANNEL_SELECT_PIN_4);
@@ -184,22 +190,21 @@ InterruptIn btn_center(BTN_CENTER_PIN);
 InterruptIn btn_plus1(BTN_PLUS_1_PIN);
 InterruptIn btn_plus2(BTN_PLUS_2_PIN);
 
-volatile bool btn_center_touched = false;
 volatile bool btn_plus1_touched = false;
 volatile bool btn_plus2_touched = false;
 #endif
+
+#if USE_STATUS_LEDS
+DigitalOut led_pwr(LED_PWR_PIN, 1);
+DigitalOut led_motors(LED_MTR_PIN, 0);
+#endif
+
 
 
 #if USE_USBMIDI
 UsbMidiAggregat usbmidi(USB_POWER_PIN, false);
 MidiMessage::SimpleParser_t usbmidi_parser;
 #endif //USE_USBMIDI
-
-
-#if USE_USBMIDI && USE_STATUS_LEDS
-DigitalOut usb_led1(LED_USB_1_PIN);
-DigitalOut usb_led2(LED_USB_2_PIN);
-#endif
 
 #if USE_USBMIDI && USE_FORWARDING_CONTROLS
 DigitalIn usb_to_midi_pin(USB_TO_MIDI_PIN);
@@ -211,6 +216,11 @@ DigitalIn usb_to_net_pin(USB_TO_NET_PIN);
 #define usb_to_midi()   USB_TO_MIDI_DEFAULT    
 #define usb_to_net()    USB_TO_NET_DEFAULT
 #endif //USE_USBMIDI && USE_FORWARDING_CONTROLS
+
+#if USE_USBMIDI && USE_STATUS_LEDS
+DigitalOut usb_led1(LED_USB_1_PIN);
+DigitalOut usb_led2(LED_USB_2_PIN);
+#endif
 
 
 
@@ -280,6 +290,9 @@ DigitalOut net_led1(LED_NET_1_PIN);
 DigitalOut net_led2(LED_NET_2_PIN);
 #endif
 
+
+
+
 /************ INLINE FUNCTIONS ************/
 
 inline float u7_to_pos(uint8_t value)
@@ -300,9 +313,10 @@ inline float s14_to_pos(int value)
 
 void do_nothing(){}
 
+
+
+
 /************ FUNCTIONS ************/
-
-
 
 void core_init()
 {
@@ -323,19 +337,14 @@ void gpio_init()
     #endif
 
     #if USE_BUTTONS
-    // btn_center.mode(PullDown);
     btn_center.rise([](){
-        // motors_center_request = true;
-
-        usb_led2 = !usb_led2;
+        motors_center_request = true;
     });
-    // btn_center.mode(PullUp);
     btn_plus1.rise([](){
-        midi_led2 = !midi_led2;
+        btn_plus1_touched = true;
     });
-    // btn_center.mode(PullDefault);
     btn_plus2.rise([](){
-        net_led2 = !net_led2;
+        btn_plus2_touched = true;
     });
     #endif //USE_BUTTONS
 
@@ -391,9 +400,15 @@ void motors_run()
         motors_center_request = false;
     }
 
+    bool is_off = !motors_running;
+
     for(int i = 0; i < MOTOR_COUNT; i++){
         motors[i].run();
+
+        is_off |= !motors[i].get_state();
     }
+
+    led_motors = is_off;
 }
 
 void motors_center()
@@ -520,14 +535,16 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 void controller_handle_nrpn(uint8_t channel, MidiMessage::NRpnType_t type, MidiMessage::NRpnAction_t action,  uint16_t controller, uint16_t value, Source source)
 {
     #if USE_CONTROLLER_LOGIC == 1
-    if (type == MidiMessage::NRpnTypeNRPN && channel == get_channel() && action == MidiMessage::NRpnActionValue){
-        int32_t motori = controller - CC_CONTROLLER_OFFSET;
-        // printf("controller %d\n", motori);
+    if (type == MidiMessage::NRpnTypeNRPN && channel == get_channel()){
+        if (action == MidiMessage::NRpnActionValue){
+            int32_t motori = controller - CC_CONTROLLER_OFFSET;
+            // printf("controller %d\n", motori);
 
-        if (0 <= motori && motori < MOTOR_COUNT){
-            float pos = u14_to_pos(value);
-            // printf("motor[%d] = %d\n", motori, (int)(pos*100));
-            motors[motori] = pos;
+            if (0 <= motori && motori < MOTOR_COUNT){
+                float pos = u14_to_pos(value);
+                // printf("motor[%d] = %d\n", motori, (int)(pos*100));
+                motors[motori] = pos;
+            }
         }
     }
     #endif //USE_CONTROLLER_LOGIC == 1
