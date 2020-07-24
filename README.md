@@ -97,23 +97,28 @@ Total (material) cost ~ 100.-
 
 Pin | Function | Description | Connector
 --- | --- | --- | ---
-PD8 | DBG SERIAL | TX | CN1 (USB)
-PD9 | DBG SERIAL | RX
+PC10 (6) | DBG SERIAL | TX | CN1 (USB)
+PC11 (8) | DBG SERIAL | RX
 | |
-PD2 | UART | MIDI RX | CN7
-PC12 | UART | MIDI TX
+PC12 (10) | UART | MIDI TX | CN7
+PD2 (12) | UART | MIDI RX
 | |
-D11 (PB5) | PWM | Motor 1 | CN7
-D10 (PD14)| PWM | Motor 2
-D9 (PD15) | PWM | Motor 3
-D6 (PE9)  | PWM | Motor 4 | CN10
-D5 (PE9)  | PWM | Motor 5
-D3 (PE13) | PWM | Motor 6
-D36 (PB10)| PWM | Motor 7
-D35 (PB11)| PWM | Motor 8
-D33 (PB0) | PWM | *Reserve*
-D32 (PA0) | PWM | *Reserve*
-| |
+PC8 (2) | PWM3/3 | Motor 1 Control | CN8
+PC9 (4) | PWM3/4 | Motor 2 Control
+PA6 (12) | PWM3/1 | Motor 3 Control | CN7
+PB5 (14) | PWM3/2 | Motor 4 Control
+PB3 (15) | PWM2/2 | Motor 5 Control
+PD14 (16) | PWM4/3 | Motor 6 Control
+PD15 (18) | PWM4/4 | Motor 7 Control
+PE9 (4) | PWM1/1 | Motor 8 Control | CN10
+PE11 (6) | PWM1/2 | Motor 9 Control
+PE14 (8) | PWM1/4 | Motor 10 Control
+PE13 (10) | PWM1/3 | Motor 11 Control
+PB6 (14) | PWM4/1 | Motor 12 Control
+PB7 (16) | PWM4/2 | Motor 13 Control
+PA0 (29) | PWM2/1 | Motor 14 Control
+PB10 (32) | PWM2/3 | Motor 15 Control
+PB11 (34) | PWM2/4 | Motor 16 Control
 
 #### iocontrols
 
