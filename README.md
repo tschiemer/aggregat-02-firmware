@@ -81,7 +81,7 @@ Number | Item | Cost per (10/100) Unit(s)  | Cost
 1 | [ST NUCLEO-H743ZI2](https://www.digikey.ch/product-detail/en/stmicroelectronics/NUCLEO-H743ZI2/497-19452-ND/10130892) (Base Board) | 25.65 | 25.65
 1 | [IOControls board](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-iocontrols) | ~20.00 | 20.00
 1 | [Aggregat shield](https://gitlab.zhdk.ch/aggregat-02/a01-pcb-shield)
- | 
+| |
 1 | [USB 2.0 B Connector](https://www.digikey.ch/product-detail/en/amphenol-icc-commercial-products/MUSB-D511-00/MUSB-D511-00-ND/2567127) | 9.56 | 9.56
 3 | [DIN 5-pol (MIDI) Connector](https://www.digikey.ch/product-detail/en/cui-devices/SD-50LS/CP-1235-ND/500833) | 4.17 | 12.52
 1 | [AC-DC Converter 5V 14A](https://www.digikey.ch/product-detail/en/mean-well-usa-inc/LRS-75-5/1866-3364-ND/7705056) | 17.25 | 17.25
@@ -99,10 +99,10 @@ Pin | Function | Description | Connector
 --- | --- | --- | ---
 PD8 | DBG SERIAL | TX | CN1 (USB)
 PD9 | DBG SERIAL | RX
- |
+| |
 PD2 | UART | MIDI RX | CN7
 PC12 | UART | MIDI TX
- |
+| |
 D11 (PB5) | PWM | Motor 1 | CN7
 D10 (PD14)| PWM | Motor 2
 D9 (PD15) | PWM | Motor 3
@@ -113,7 +113,7 @@ D36 (PB10)| PWM | Motor 7
 D35 (PB11)| PWM | Motor 8
 D33 (PB0) | PWM | *Reserve*
 D32 (PA0) | PWM | *Reserve*
- |
+| |
 
 #### iocontrols
 
@@ -121,16 +121,16 @@ NUCLEO connectors CN9 (+CN8) only.
 
 ##### CN1 (iocontrols connector)
 
- Pin | Function | Description | Nucleo Connector
- --- | --- | --- | ---
+Pin | Function | Description | Nucleo Connector
+--- | --- | --- | ---
 3V3 (7) | | | CN 8
 GND (11) |
 NRST (5) |
 
 ##### CN2 (iocontrols connector)
 
- Pin | Function | Description | Nucleo Connector
- --- | --- | --- | ---
+Pin | Function | Description | Nucleo Connector
+--- | --- | --- | ---
 PA3 (1) | GPIO OUT | LED Motor | CN9 (lhs)
 PC0 (3) | GPIO OUT | LED Power
 PC3 (5) | GPIO IN | MIDI Channel Select 4 (MSB)
