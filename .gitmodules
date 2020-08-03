@@ -1,6 +1,6 @@
 [submodule "deps/midimessage"]
-	path = deps/midimessage
+	path = third_party/midimessage
 	url = https://github.com/tschiemer/midimessage
 [submodule "deps/minimr"]
-	path = deps/minimr
+	path = third_party/minimr
 	url = https://github.com/tschiemer/minimr
