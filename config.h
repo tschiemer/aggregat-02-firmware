@@ -48,14 +48,14 @@
 #define NET_TO_USB_DEFAULT          true
 
 // not used at this time
-#define USE_CFG 1
+#define USE_CFG 0
 
 #if USE_CFG
 #define CFG_RSRV_1_PIN                  PD_5
 #define CFG_RSRV_2_PIN                  PD_4
 #endif //USE_CFG
 
-#define USE_BUTTONS 1
+#define USE_BUTTONS 0
 
 #if USE_BUTTONS
 #define BTN_CENTER_PIN                  PE_2
@@ -68,8 +68,8 @@
 #if USE_STATUS_LEDS
 #define LED_PWR_PIN         PC_0
 #define LED_MTR_PIN         PA_3
-#define LED_USB_1_PIN       PE_6
-#define LED_USB_2_PIN       PE_3
+#define LED_USB_1_PIN       LED1 //PE_6
+#define LED_USB_2_PIN       LED2 //PE_3
 #define LED_MIDI_1_PIN      PF_8
 #define LED_MIDI_2_PIN      PF_7
 #define LED_NET_1_PIN       PF_9
@@ -98,7 +98,7 @@
 
 #define MOTOR_PWR_AT_STARTUP 1
 
-#define MOTOR_COUNT         1
+#define MOTOR_COUNT         2
 
 
 // PWM out pins

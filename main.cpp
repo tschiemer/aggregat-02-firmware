@@ -486,12 +486,17 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
     // power control
     if (msg.type() == MIDIMessage::NoteOnType || msg.type() == MIDIMessage::NoteOffType){
+        printf("note\n");
         if (msg.channel() == get_channel()){
-            int32_t motori = msg.controller() - CC_CONTROLLER_OFFSET;
+            printf("channel %d\n");
+
+            int32_t motori = msg.key();
 
             if (0 <= motori && motori < MOTOR_COUNT){
                 // turn on or off
-                motors[motori] = msg.type() == MIDIMessage::NoteOnType;
+                bool off = msg.type() == MIDIMessage::NoteOffType || msg.velocity() == 0;
+                printf("motor pwr %d := %d\n", motori, !off);
+                motors[motori] = !off;
             }
         }
     }
