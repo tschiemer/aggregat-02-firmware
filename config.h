@@ -3,7 +3,7 @@
 /************ FEATURES ************/
 
 // MIDI channel (0-15) selection through 4 active high switches
-#define USE_CHANNEL_SELECT      0
+#define USE_CHANNEL_SELECT      1
 
 #if USE_CHANNEL_SELECT
 #define CHANNEL_SELECT_PIN_1    PC_3   // LSB
@@ -17,7 +17,7 @@
 
 
 // device id (0-15) selection (usb device name + hostname)
-#define USE_DEVICE_ID_SELECT           0
+#define USE_DEVICE_ID_SELECT           1
 
 #if USE_DEVICE_ID_SELECT
 #define DEVICE_ID_SELECT_PIN_1         PF_1   // LSB
@@ -29,7 +29,7 @@
 // default value (iff USE_DEVICE_ID_SELECT == 0)
 #define DEVICE_ID_SELECT_DEFAULT       0
 
-#define USE_FORWARDING_CONTROLS      0
+#define USE_FORWARDING_CONTROLS      1
 
 #if USE_FORWARDING_CONTROLS
 #define USB_TO_MIDI_PIN             PF_0
@@ -48,14 +48,14 @@
 #define NET_TO_USB_DEFAULT          true
 
 // not used at this time
-#define USE_CFG 0
+#define USE_CFG 1
 
 #if USE_CFG
 #define CFG_RSRV_1_PIN                  PD_5
 #define CFG_RSRV_2_PIN                  PD_4
 #endif //USE_CFG
 
-#define USE_BUTTONS 0
+#define USE_BUTTONS 1
 
 #if USE_BUTTONS
 #define BTN_CENTER_PIN                  PE_2
@@ -68,8 +68,8 @@
 #if USE_STATUS_LEDS
 #define LED_PWR_PIN         PC_0
 #define LED_MTR_PIN         PA_3
-#define LED_USB_1_PIN       LED1 //PE_6
-#define LED_USB_2_PIN       LED2 //PE_3
+#define LED_USB_1_PIN       PE_6
+#define LED_USB_2_PIN       PE_3
 #define LED_MIDI_1_PIN      PF_8
 #define LED_MIDI_2_PIN      PF_7
 #define LED_NET_1_PIN       PF_9
@@ -98,7 +98,7 @@
 
 #define MOTOR_PWR_AT_STARTUP 1
 
-#define MOTOR_COUNT         2
+#define MOTOR_COUNT         16
 
 
 // PWM out pins
@@ -109,7 +109,7 @@
 #define MOTOR_5_PWM_PIN         PB_3
 #define MOTOR_6_PWM_PIN         PD_14
 #define MOTOR_7_PWM_PIN         PD_15
-#define MOTOR_8_PWM_PIN         PC_8 //PE_9
+#define MOTOR_8_PWM_PIN         PE_9
 #define MOTOR_9_PWM_PIN         PE_11
 #define MOTOR_10_PWM_PIN        PE_14
 #define MOTOR_11_PWM_PIN        PE_13
@@ -122,18 +122,18 @@
 // GPIO power on 
 #define MOTOR_1_PWR_PIN         PC_6
 #define MOTOR_2_PWR_PIN         PC_6
-#define MOTOR_3_PWR_PIN         PC_7
-#define MOTOR_4_PWR_PIN         PC_7
-#define MOTOR_5_PWR_PIN         PB_3
-#define MOTOR_6_PWR_PIN         PB_3
+#define MOTOR_3_PWR_PIN         PA_15
+#define MOTOR_4_PWR_PIN         PA_15
+#define MOTOR_5_PWR_PIN         PC_7
+#define MOTOR_6_PWR_PIN         PC_7
 #define MOTOR_7_PWR_PIN         PB_4
 #define MOTOR_8_PWR_PIN         PB_4
 #define MOTOR_9_PWR_PIN         PF_5
 #define MOTOR_10_PWR_PIN        PF_5
-#define MOTOR_11_PWR_PIN        PC_6//PB_2
-#define MOTOR_12_PWR_PIN        PC_6//PB_2
-#define MOTOR_13_PWR_PIN        PC_6// PE_2
-#define MOTOR_14_PWR_PIN        PC_6//PE_2
+#define MOTOR_11_PWR_PIN        PB_2
+#define MOTOR_12_PWR_PIN        PB_2
+#define MOTOR_13_PWR_PIN        PD_11
+#define MOTOR_14_PWR_PIN        PD_11
 #define MOTOR_15_PWR_PIN        PE_0
 #define MOTOR_16_PWR_PIN        PE_0
 

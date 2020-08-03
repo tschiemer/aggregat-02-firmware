@@ -339,12 +339,18 @@ void gpio_init()
     #if USE_BUTTONS
     btn_center.rise([](){
         motors_center_request = true;
+        // usb_led1 = !usb_led1;
+        // usb_led2 = !usb_led2;
     });
     btn_plus1.rise([](){
         btn_plus1_touched = true;
+        // midi_led1 = !midi_led1;
+        // midi_led2 = !midi_led2;
     });
     btn_plus2.rise([](){
         btn_plus2_touched = true;
+        // net_led1 = !net_led1;
+        // net_led2 = !net_led2;
     });
     #endif //USE_BUTTONS
 
@@ -405,7 +411,7 @@ void motors_run()
     for(int i = 0; i < MOTOR_COUNT; i++){
         motors[i].run();
 
-        is_off |= !motors[i].get_state();
+        // is_off |= !motors[i].get_state();
     }
 
     led_motors = is_off;
@@ -486,16 +492,13 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
 
     // power control
     if (msg.type() == MIDIMessage::NoteOnType || msg.type() == MIDIMessage::NoteOffType){
-        printf("note\n");
         if (msg.channel() == get_channel()){
-            printf("channel %d\n");
-
             int32_t motori = msg.key();
 
             if (0 <= motori && motori < MOTOR_COUNT){
                 // turn on or off
                 bool off = msg.type() == MIDIMessage::NoteOffType || msg.velocity() == 0;
-                printf("motor pwr %d := %d\n", motori, !off);
+                // printf("motor pwr %d := %d\n", motori, !off);
                 motors[motori] = !off;
             }
         }

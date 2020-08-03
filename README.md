@@ -155,22 +155,30 @@ PC11 (8) | DBG SERIAL | RX
 PC12 (10) | UART | MIDI TX | CN7
 PD2 (12) | UART | MIDI RX
 | |
-PC8 (2) | PWM3/3 | Motor 1 Control | CN8
-PC9 (4) | PWM3/4 | Motor 2 Control
-PA6 (12) | PWM3/1 | Motor 3 Control | CN7
-PB5 (14) | PWM3/2 | Motor 4 Control
-PB3 (15) | PWM2/2 | Motor 5 Control
-PD14 (16) | PWM4/3 | Motor 6 Control
-PD15 (18) | PWM4/4 | Motor 7 Control
-PE9 (4) | PWM1/1 | Motor 8 Control | CN10
-PE11 (6) | PWM1/2 | Motor 9 Control
-PE14 (8) | PWM1/4 | Motor 10 Control
-PE13 (10) | PWM1/3 | Motor 11 Control
-PB6 (14) | PWM4/1 | Motor 12 Control
-PB7 (16) | PWM4/2 | Motor 13 Control
-PA0 (29) | PWM2/1 | Motor 14 Control
-PB10 (32) | PWM2/3 | Motor 15 Control
-PB11 (34) | PWM2/4 | Motor 16 Control
+PC8 (2) | PWM3/3 | Motor 1 (spkr 1) Control | CN8
+PC9 (4) | PWM3/4 | Motor 2 (spkr 1) Control
+PC6 (1) | GPIO OUT | Motor 1/2 Power | CN7
+PA15 (9) | GPIO OUT | Motor 3/4 Power
+PC7 (11) | GPIO OUT | Motor 5/6 Power
+PA6 (12) | PWM3/1 | Motor 3 (spkr 2) Control
+PB5 (14) | PWM3/2 | Motor 4 (spkr 2) Control
+PB3 (15) | PWM2/2 | Motor 5 (spkr 3) Control
+PD14 (16) | PWM4/3 | Motor 6 (spkr 3) Control
+PD15 (18) | PWM4/4 | Motor 7 (spkr 4) Control
+PB4 (19) | GPIO OUT | Motor 7/8 Power 
+PE9 (4) | PWM1/1 | Motor 8 (spkr 4) Control | CN10
+PE11 (6) | PWM1/2 | Motor 9 (spkr 5) Control
+PE14 (8) | PWM1/4 | Motor 10 (spkr 5) Control
+PF5 (9) | GPIO OUT | Motor 9/10 Power
+PE13 (10) | PWM1/3 | Motor 11 (spkr 6) Control
+PB6 (14) | PWM4/1 | Motor 12 (spkr 6) Control
+PB2 (15) | GPIO OUT | Motor 11/12 Power
+PB7 (16) | PWM4/2 | Motor 13 (spkr 7) Control
+PD11 (23) | GPIO OUT | Motor 13/14 Power
+PA0 (29) | PWM2/1 | Motor 14 (spkr 7) Control
+PB10 (32) | PWM2/3 | Motor 15 (spkr 8) Control
+PE0 (33) | GPIO OUT | Motor 15/16 Power
+PB11 (34) | PWM2/4 | Motor 16 (spkr 8) Control
 
 #### iocontrols
 
