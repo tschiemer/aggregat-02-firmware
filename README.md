@@ -19,17 +19,17 @@ https://aggregat.zhdk.ch/
     1. *Proposed* Raw UDP (quasi simple) port (?): 1234 (?)
     2. [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
     3. *Postpone (when components are made by pt)* RTPMIDI (complex)
-- [ ] Control Logic
+- [x] Control Logic
   - [x] System commands (reset/continue/etc)
   - [x] Motor Control (PWR + Position) using CC/NRPN/Note on/off
-- [ ] Motor Control
-  - [ ] Verify pin availability for 16 motors/PWMs
-  - [ ] SSR Relays???
-- [ ] Calibration necessary? how?
+- [x] Motor Control
+  - [x] Verify pin availability for 16 motors/PWMs
+  - [x] Solid-State Relais -> not necessary, instead relieve movable components of mechanical force caused by overly inflexible cables
+- [x] Calibration necessary? -> mechanical calibration
 - [ ] Hardware
   - [x] IOControls
-    - [ ] v1.1 with minor fixes
-  - [ ] Aggregat Shield
+    - [x] v1.2 with minor fixes and new header
+  - [ ] Aggregat Shield -> no new PCB, but handsoldered prototype board
 
 ## Installation / Flashing
 
@@ -165,7 +165,7 @@ PB5 (14) | PWM3/2 | Motor 4 (spkr 2) Control
 PB3 (15) | PWM2/2 | Motor 5 (spkr 3) Control
 PD14 (16) | PWM4/3 | Motor 6 (spkr 3) Control
 PD15 (18) | PWM4/4 | Motor 7 (spkr 4) Control
-PB4 (19) | GPIO OUT | Motor 7/8 Power 
+PB4 (19) | GPIO OUT | Motor 7/8 Power
 PE9 (4) | PWM1/1 | Motor 8 (spkr 4) Control | CN10
 PE11 (6) | PWM1/2 | Motor 9 (spkr 5) Control
 PE14 (8) | PWM1/4 | Motor 10 (spkr 5) Control
