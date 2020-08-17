@@ -150,6 +150,10 @@ Total (material) cost ~ 120.-
 
 ### Pin Assignment
 
+![Pin assignment nucleo LHS](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/pin-assignment-nucleo-lhs.png)
+![Pin assignment nucleo RHS](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/pin-assignment-nucleo-rhs.png)
+
+
 Pin | Function | Description | Connector
 --- | --- | --- | ---
 PC10 (6) | DBG SERIAL | TX | CN1 (USB)
@@ -184,8 +188,6 @@ PE0 (33) | GPIO OUT | Motor 15/16 Power
 PB11 (34) | PWM2/4 | Motor 16 (spkr 8) Control
 
 #### iocontrols
-
-![Nucleo headers left side](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/mcu/nucleo_h743zi2_zio_left_2019_10_9.png)
 
 NUCLEO connectors CN9 (+CN8) only.
 
