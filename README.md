@@ -244,6 +244,6 @@ PG1 (30) | GPIO OUT | LED 32 (NET2)
 ## Questions?
 
 - Peter Färber, peter.faerber@zhdk.ch
-- Philip Tschiemer, philip.tschiemer@gmail.com
+- Philip Tschiemer, [filou.se](https://filou.se)
 
 ## Copyfright 2020 ICST / ZHdK
