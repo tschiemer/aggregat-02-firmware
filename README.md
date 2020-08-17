@@ -95,6 +95,8 @@ or
 
 ## Hardware Controls
 
+![iocontrols board](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/iocontrols-labelled.png)
+
 ## Software
 
 Use [Mbed Studio](https://os.mbed.com/studio/) as IDE.
@@ -182,6 +184,8 @@ PE0 (33) | GPIO OUT | Motor 15/16 Power
 PB11 (34) | PWM2/4 | Motor 16 (spkr 8) Control
 
 #### iocontrols
+
+![Nucleo headers left side](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/mcu/nucleo_h743zi2_zio_left_2019_10_9.png)
 
 NUCLEO connectors CN9 (+CN8) only.
 
