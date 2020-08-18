@@ -6,10 +6,10 @@
 #define USE_CHANNEL_SELECT      1
 
 #if USE_CHANNEL_SELECT
-#define CHANNEL_SELECT_PIN_1    PC_3   // LSB
-#define CHANNEL_SELECT_PIN_2    PB_1
-#define CHANNEL_SELECT_PIN_3    PC_2
-#define CHANNEL_SELECT_PIN_4    PF_10    // MSB
+#define CHANNEL_SELECT_PIN_1    PF_10   // LSB
+#define CHANNEL_SELECT_PIN_2    PC_2
+#define CHANNEL_SELECT_PIN_3    PB_1
+#define CHANNEL_SELECT_PIN_4    PC_3    // MSB
 #endif
 
 // default value (iff USE_CHANNEL_SELECT == 0)
