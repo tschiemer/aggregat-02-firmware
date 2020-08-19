@@ -26,10 +26,9 @@ https://aggregat.zhdk.ch/
   - [x] Verify pin availability for 16 motors/PWMs
   - [x] Solid-State Relais -> not necessary, instead relieve movable components of mechanical force caused by overly inflexible cables
 - [x] Calibration necessary? -> mechanical calibration
-- [ ] Hardware
+- [x] Hardware
   - [x] IOControls
     - [x] v1.2 with minor fixes and new header
-  - [ ] Aggregat Shield -> no new PCB, but handsoldered prototype board
 
 ## Installation / Flashing
 
@@ -141,6 +140,8 @@ Number | Item | Cost per (10/100) Unit(s)  | Cost
 1 | [AC-DC Converter 5V 14A](https://www.digikey.ch/product-detail/en/mean-well-usa-inc/LRS-75-5/1866-3364-ND/7705056) | 17.25 | 17.25
 1 | [USB Power Adapter](https://www.digikey.ch/product-detail/en/cui-inc/SWI3-5-E-I38/102-4482-ND/7784533) | 4.94 | 4.94
 3 | [30 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/SFH210-PPPC-D15-ID-BK/S9292-ND/2095301) (IOControls) | 1.06 | 3.18
+1 | [34 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/sullins-connector-solutions/SFH210-PPPC-D17-ID-BK/S9293-ND/2095302) | 0.94 | 0.94
+1 | [20 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/sullins-connector-solutions/SFH210-PPPC-D10-ID-BK/S9289-ND/2095298) | 0.72 | 0.72
 2 | [30 wire 28 AWG ribbon cable](..) (IOControls) | 0.40 | 0.80
  | Headers: [1](https://www.digikey.ch/product-detail/en/PREC040SABN-RC/S1022EC-40-ND/2775014) and/or [2](https://www.digikey.ch/product-detail/en/PRPC032DABN-RC/S2021EC-32-ND/2775895) | | < 5.00
 8 | [4 pin motor connector](https://www.digikey.ch/product-detail/en/0469930410/WM16259-ND/5116019) | 0.57 | <
