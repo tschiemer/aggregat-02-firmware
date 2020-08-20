@@ -6,8 +6,7 @@ https://aggregat.zhdk.ch/
 
 ## Todos
 
-- [x] USBMIDI connectivity
-- [x] Classical MIDI (over UART) connectivity
+- [ ] Sytem testing & revision
 - [x] Ethernet-based networking
   - [x] DHCP or link-local addressing
   - [ ] [mDNS / DNS-SD](https://github.com/tschiemer/minimr) based host/service discovery
@@ -19,16 +18,6 @@ https://aggregat.zhdk.ch/
     1. *Proposed* Raw UDP (quasi simple) port (?): 1234 (?)
     2. [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
     3. *Postpone (when components are made by pt)* RTPMIDI (complex)
-- [x] Control Logic
-  - [x] System commands (reset/continue/etc)
-  - [x] Motor Control (PWR + Position) using CC/NRPN/Note on/off
-- [x] Motor Control
-  - [x] Verify pin availability for 16 motors/PWMs
-  - [x] Solid-State Relais -> not necessary, instead relieve movable components of mechanical force caused by overly inflexible cables
-- [x] Calibration necessary? -> mechanical calibration
-- [x] Hardware
-  - [x] IOControls
-    - [x] v1.2 with minor fixes and new header
 
 ## Installation / Flashing
 
@@ -142,8 +131,8 @@ Number | Item | Cost per (10/100) Unit(s)  | Cost
 3 | [30 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/SFH210-PPPC-D15-ID-BK/S9292-ND/2095301) (IOControls) | 1.06 | 3.18
 1 | [34 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/sullins-connector-solutions/SFH210-PPPC-D17-ID-BK/S9293-ND/2095302) | 0.94 | 0.94
 1 | [20 pin ribbon cable connector](https://www.digikey.ch/product-detail/en/sullins-connector-solutions/SFH210-PPPC-D10-ID-BK/S9289-ND/2095298) | 0.72 | 0.72
-2 | [30 wire 28 AWG ribbon cable](..) (IOControls) | 0.40 | 0.80
- | Headers: [1](https://www.digikey.ch/product-detail/en/PREC040SABN-RC/S1022EC-40-ND/2775014) and/or [2](https://www.digikey.ch/product-detail/en/PRPC032DABN-RC/S2021EC-32-ND/2775895) | | < 5.00
+2 | [34 wire 28 AWG ribbon cable (example)](https://www.digikey.ch/product-detail/en/cicoil/310J101-34/CI34N-10-ND/3524331) (IOControls) | 0.40 | 0.80
+| | Headers: [1](https://www.digikey.ch/product-detail/en/PREC040SABN-RC/S1022EC-40-ND/2775014) and/or [2](https://www.digikey.ch/product-detail/en/PRPC032DABN-RC/S2021EC-32-ND/2775895) | | < 5.00
 8 | [4 pin motor connector](https://www.digikey.ch/product-detail/en/0469930410/WM16259-ND/5116019) | 0.57 | <
 1 | [Power plug w/ switch](https://www.digikey.ch/product-detail/en/schurter-inc/DC11-0001-001/486-1073-ND/641579) | 13.08 | 13.08
 
