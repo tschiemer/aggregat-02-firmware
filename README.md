@@ -12,12 +12,13 @@ https://aggregat.zhdk.ch/
   - [ ] [mDNS / DNS-SD](https://github.com/tschiemer/minimr) based host/service discovery
      - [x] ~~using hardware id as part of hostname~~
      - [ ] ~~dynamic, simple hostname~~
-     - [ ] *Proposed* Use Channel (or specific) setting as part of hostname, ex ch4.aggregat.local or 1.aggregat.local
+     - [ ] *Proposed* Use Channel (or specific) setting as part of hostname, ex   ch4.aggregat.local or 1.aggregat.local
      - [ ] service???
   - [ ] Control interface TBD
     1. *Proposed* Raw UDP (quasi simple) port (?): 1234 (?)
     2. [OSC](https://github.com/MariadeAnton/oscpack) (relatively simple)
     3. *Postpone (when components are made by pt)* RTPMIDI (complex)
+
 
 ## Installation / Flashing
 
@@ -84,6 +85,29 @@ or
 ## Hardware Controls
 
 ![iocontrols board](https://gitlab.zhdk.ch/aggregat-02/a01-firmware/-/raw/master/docs/iocontrols-labelled.png)
+
+
+| What | Function |
+| --- | --- |
+| Button left corner | Hard reset |
+| 4-pin DIP Switch left | MIDI channel select (binary MSB-LSB) |
+| 4-pin DIP Switch right | Device id select (binary MSB-LSB) |
+| 8-pin DIP Switch: Pin 1 | Forward USBMIDI to MIDI? |
+| 8-pin DIP Switch: Pin 2 | Forward USBMIDI to RTPMIDI? |
+| 8-pin DIP Switch: Pin 3 | Forward MIDI to USBMIDI? |
+| 8-pin DIP Switch: Pin 4 | Forward MIDI to RTPMIDI? |
+| 8-pin DIP Switch: Pin 5 | Forward RTPMIDI to USBMIDI? |
+| 8-pin DIP Switch: Pin 6 | Forward RTPMIDI to MIDI? |
+| 8-pin DIP Switch: Pin 7 | HIGH -> Suspend motors on startup, LOW -> run motors |
+| 8-pin DIP Switch: Pin 8 | Enable motor power control (MIDI commands are processed) *currently feature not implemented in hardware* |
+| Three buttons left | Set all motors to center position |
+| Three buttons middle | *not implemented* |
+| Three buttons right | Suspend / Resume all motors |
+| |
+| Green LED left bottom | System has power |
+| Red LED left top | Motors are either all suspended or at least one motor's power is off |
+| LED
+
 
 ## Software
 

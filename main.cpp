@@ -401,17 +401,26 @@ void motors_resume()
 
 void motors_run()
 {
+    if (btn_plus2_touched){
+        if (motors_running){
+            motors_suspend();
+        } else {
+            motors_resume();
+        }
+        btn_plus2_touched = false;
+    }
+
     if (motors_center_request){
         motors_center();
         motors_center_request = false;
     }
 
-    bool is_off = !motors_running;
+    bool is_off = motors_running == false;
 
     for(int i = 0; i < MOTOR_COUNT; i++){
         motors[i].run();
 
-        // is_off |= !motors[i].get_state();
+        is_off |= motors[i].get_state() == false;
     }
 
     led_motors = is_off;
@@ -491,15 +500,22 @@ void controller_handle_msg(uint8_t * buffer, size_t length, Source source)
     #endif //USE_PITCHBEND_CONTROL
 
     // power control
-    if (msg.type() == MIDIMessage::NoteOnType || msg.type() == MIDIMessage::NoteOffType){
-        if (msg.channel() == get_channel()){
-            int32_t motori = msg.key();
+    #if USE_CFG
+    // only enable power pin iff cfg2 is enabled
+    if (cfg2.read()){
+    #else
+    {
+    #endif
+        if (msg.type() == MIDIMessage::NoteOnType || msg.type() == MIDIMessage::NoteOffType){
+            if (msg.channel() == get_channel()){
+                int32_t motori = msg.key();
 
-            if (0 <= motori && motori < MOTOR_COUNT){
-                // turn on or off
-                bool off = msg.type() == MIDIMessage::NoteOffType || msg.velocity() == 0;
-                // printf("motor pwr %d := %d\n", motori, !off);
-                motors[motori] = !off;
+                if (0 <= motori && motori < MOTOR_COUNT){
+                    // turn on or off
+                    bool off = msg.type() == MIDIMessage::NoteOffType || msg.velocity() == 0;
+                    // printf("motor pwr %d := %d\n", motori, !off);
+                    motors[motori] = !off;
+                }
             }
         }
     }
@@ -1087,7 +1103,14 @@ int main()
     netmidi_init();
 
     // start motors
-    // motors_resume();
+    #if USE_CFG
+    // if cfg1 is low, resume (all switches (default) low -> system should run without further ado)
+    if (!cfg1.read()){
+        motors_resume();
+    }
+    #else
+    motors_resume();
+    #endif //USE_CFG
 
     while (true) {
         usbmidi_run();
