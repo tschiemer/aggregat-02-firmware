@@ -1,5 +1,9 @@
 #include "mbed.h"
 
+/************ DEBUG / TESTING ************/
+
+#define IOCONTROL_TEST_MODE 1
+
 /************ FEATURES ************/
 
 // MIDI channel (0-15) selection through 4 active high switches

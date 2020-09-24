@@ -720,7 +720,7 @@ void midi_tx(uint8_t * buffer, size_t length)
 void netmidi_init()
 {
     // low-level enable multicast pass all 
-    WRITE_REG(ETH->MACPFR, READ_REG(ETH->MACPFR) | (1 << 4));
+    // WRITE_REG(ETH->MACPFR, READ_REG(ETH->MACPFR) | (1 << 4));
 
     const char * mac = eth.get_mac_address();
     printf("mac %s\n", mac ? mac : "none");
@@ -1065,7 +1065,7 @@ void netmidi_run()
 
     if (res > 0){
         data[res] = '\0';
-        printf("udp rx (%d) from %s: %s\n", res, addr.get_ip_address(), data);
+        printf("udp rx (%d) from %s:%d %s\n", res, addr.get_ip_address(), addr.get_port(), data);
         
         // echo back
         udp_sock.sendto(addr, data, res);
@@ -1091,11 +1091,95 @@ int main()
 
     core_init();
 
+    #if IOCONTROL_TEST_MODE == 1
+
+
+    #if USE_BUTTONS
+    btn_center.rise([](){
+        motors_center_request = true;
+    });
+    btn_plus1.rise([](){
+        btn_plus1_touched = true;
+    });
+    btn_plus2.rise([](){
+        btn_plus2_touched = true;
+    });
+    #endif //USE_BUTTONS
+
+    printf("device_id %d\n", get_device_id());
+    printf("channel %d\n", get_channel());
+
+    printf("usb -> midi %d\n", usb_to_midi());
+    printf("usb -> net %d\n", usb_to_net());
+    printf("midi -> usb %d\n", midi_to_usb());
+    printf("midi -> net %d\n", midi_to_net());
+    printf("net -> usb %d\n", net_to_usb());
+    printf("net -> midi %d\n", net_to_midi());
+
+    #if USE_CFG
+    printf("cfg1 %d\n", cfg1.read());
+    printf("cfg2 %d\n", cfg2.read());
+    #endif
+
+    while(1){
+
+        // center button -> value of get_device_id()
+        if (btn_center == 1 && btn_plus1 == 0 && btn_plus2 == 0){
+            led_pwr = get_device_id() & 0x08;
+            usb_led1 = get_device_id() & 0x04;
+            midi_led1 = get_device_id() & 0x02;
+            net_led1 = get_device_id() & 0x01;
+
+            led_motors = 0;
+            usb_led2 = 0;
+            midi_led2 = 0;
+            net_led2 = 0;
+        }
+        else if (btn_center == 0 && btn_plus1 == 1 && btn_plus2 == 0){
+
+            led_pwr = get_channel() & 0x08;
+            usb_led1 = get_channel() & 0x04;
+            midi_led1 = get_channel() & 0x02;
+            net_led1 = get_channel() & 0x01;
+
+            led_motors = 0;
+            usb_led2 = 0;
+            midi_led2 = 0;
+            net_led2 = 0;
+        }
+        else if (btn_center == 0 && btn_plus1 == 0 && btn_plus2 == 1){
+
+            led_pwr = cfg1.read();
+            led_motors = cfg2.read();
+            usb_led1 = usb_to_midi();
+            usb_led2 = usb_to_net();
+            midi_led1 = midi_to_usb();
+            midi_led2 = midi_to_net();
+            net_led1 = net_to_usb();
+            net_led2 = net_to_midi();
+        }
+        else {
+            led_pwr = !led_pwr;
+            led_motors = !led_motors;
+            usb_led1 = !usb_led1;
+            usb_led2 = !usb_led2;
+            midi_led1 = !midi_led1;
+            midi_led2 = !midi_led2;
+            net_led1 = !net_led1;
+            net_led2 = !net_led2;
+        }
+
+        wait_us(500000);
+    }
+
+    #endif /* IOCONTROL_TEST_MODE == 1 */
+
     // initialize gpios
     gpio_init();
 
     // initialize motors
     motors_init();
+
 
     // any com interface initialization
     usbmidi_init();
