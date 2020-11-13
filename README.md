@@ -1,8 +1,14 @@
 # aggregat controller 02
 
-https://gitlab.zhdk.ch/aggregat-02/a01
+Firmware for a NUCLEO-H743ZI2 board to allow for MIDI based control (DIN5, USB-MIDI and (future) RTPMIDI)
+of 16 PWM controlled servo motors.
+
+Created for setups of custom made, motorized AGGREGAT loudspeakers at ICST.
 
 https://aggregat.zhdk.ch/
+
+https://gitlab.zhdk.ch/aggregat-02/a01-firmware
+https://gitlab.zhdk.ch/aggregat-02/a01-pcb-iocontrols
 
 ## Todos
 
@@ -257,7 +263,14 @@ PG1 (30) | GPIO OUT | LED 32 (NET2)
 
 ## Questions?
 
-- Peter Färber, peter.faerber@zhdk.ch
+- Peter Färber, peter.faerber (@) zhdk.ch
 - Philip Tschiemer, [filou.se](https://filou.se)
 
-## Copyfright 2020 ICST / ZHdK
+
+## License
+
+Copyfright (c) 2020 Institute for Computer Music and Sound Technology (ICST), ZHdK Zurich, <https://www.zhdk.ch/forschung/icst>
+
+GNU Lesser General Public License v3.0
+
+Also see `LICENSE.txt` file.
